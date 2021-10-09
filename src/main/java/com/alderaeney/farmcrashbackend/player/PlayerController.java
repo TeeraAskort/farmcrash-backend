@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
 
+import javax.transaction.Transactional;
+
 import com.alderaeney.farmcrashbackend.crop.Crop;
 import com.alderaeney.farmcrashbackend.crop.CropService;
 import com.alderaeney.farmcrashbackend.crop.CropStage;
@@ -18,6 +20,7 @@ import com.alderaeney.farmcrashbackend.task.Task;
 import com.alderaeney.farmcrashbackend.task.TaskService;
 import com.alderaeney.farmcrashbackend.task.exceptions.TaskNotFoundException;
 import com.alderaeney.farmcrashbackend.worker.Worker;
+import com.alderaeney.farmcrashbackend.worker.WorkerService;
 import com.alderaeney.farmcrashbackend.worker.exceptions.WorkerNotFoundException;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -32,12 +35,15 @@ public class PlayerController {
     private final PlayerService playerService;
     private final TaskService taskService;
     private final CropService cropService;
+    private final WorkerService workerService;
 
     @Autowired
-    public PlayerController(PlayerService playerService, TaskService taskService, CropService cropService) {
+    public PlayerController(PlayerService playerService, TaskService taskService, CropService cropService,
+            WorkerService workerService) {
         this.playerService = playerService;
         this.taskService = taskService;
         this.cropService = cropService;
+        this.workerService = workerService;
     }
 
     @GetMapping(path = "{playerId}")
@@ -63,6 +69,7 @@ public class PlayerController {
     }
 
     @GetMapping(path = "{playerId}/worker/{workerId}/assignTask/{taskId}")
+    @Transactional
     public void assignTaskToWorker(@PathVariable("playerId") Long playerId, @PathVariable("workerId") Long workerId,
             @PathVariable("taskId") Long taskId) {
         Optional<Player> player = playerService.getPlayerById(playerId);
@@ -88,6 +95,7 @@ public class PlayerController {
     }
 
     @GetMapping(path = "{playerId}/crop/{cropId}/farmCrop")
+    @Transactional
     public void farmCrop(@PathVariable("playerId") Long playerId, @PathVariable("cropId") Long cropId) {
         Optional<Player> player = playerService.getPlayerById(playerId);
         if (player.isPresent()) {
@@ -111,6 +119,7 @@ public class PlayerController {
     }
 
     @GetMapping(path = "{playerId}/crop/{cropId}/buy/{amount}")
+    @Transactional
     public void buyCrop(@PathVariable("playerId") Long playerId, @PathVariable("cropId") Long cropId,
             @PathVariable("amount") Integer amount) {
         Optional<Player> player = playerService.getPlayerById(playerId);
@@ -129,6 +138,22 @@ public class PlayerController {
                 }
             } else {
                 throw new CropNotFoundException(cropId);
+            }
+        } else {
+            throw new PlayerNotFoundException(playerId);
+        }
+    }
+
+    @GetMapping(path = "{playerId}/worker/{workerId}/hire")
+    @Transactional
+    public void hireWorker(@PathVariable("playerId") Long playerId, @PathVariable("workerId") Long workerId) {
+        Optional<Player> player = playerService.getPlayerById(playerId);
+        if (player.isPresent()) {
+            Optional<Worker> worker = workerService.getWorkerById(workerId);
+            if (worker.isPresent()) {
+                player.get().getWorkers().add(worker.get());
+            } else {
+                throw new WorkerNotFoundException(workerId);
             }
         } else {
             throw new PlayerNotFoundException(playerId);
