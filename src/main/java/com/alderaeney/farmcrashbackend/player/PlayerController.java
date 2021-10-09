@@ -7,10 +7,12 @@ import java.util.List;
 import java.util.Optional;
 
 import com.alderaeney.farmcrashbackend.crop.Crop;
+import com.alderaeney.farmcrashbackend.crop.CropService;
 import com.alderaeney.farmcrashbackend.crop.CropStage;
 import com.alderaeney.farmcrashbackend.crop.exceptions.CropNotFarmeableException;
 import com.alderaeney.farmcrashbackend.crop.exceptions.CropNotFoundException;
 import com.alderaeney.farmcrashbackend.item.Item;
+import com.alderaeney.farmcrashbackend.player.exceptions.NotEnoughMoneyException;
 import com.alderaeney.farmcrashbackend.player.exceptions.PlayerNotFoundException;
 import com.alderaeney.farmcrashbackend.task.Task;
 import com.alderaeney.farmcrashbackend.task.TaskService;
@@ -29,11 +31,13 @@ import org.springframework.web.bind.annotation.RestController;
 public class PlayerController {
     private final PlayerService playerService;
     private final TaskService taskService;
+    private final CropService cropService;
 
     @Autowired
-    public PlayerController(PlayerService playerService, TaskService taskService) {
+    public PlayerController(PlayerService playerService, TaskService taskService, CropService cropService) {
         this.playerService = playerService;
         this.taskService = taskService;
+        this.cropService = cropService;
     }
 
     @GetMapping(path = "{playerId}")
@@ -99,6 +103,31 @@ public class PlayerController {
                 }
             }
             if (!cropFound) {
+                throw new CropNotFoundException(cropId);
+            }
+        } else {
+            throw new PlayerNotFoundException(playerId);
+        }
+    }
+
+    @GetMapping(path = "{playerId}/crop/{cropId}/buy/{amount}")
+    public void buyCrop(@PathVariable("playerId") Long playerId, @PathVariable("cropId") Long cropId,
+            @PathVariable("amount") Integer amount) {
+        Optional<Player> player = playerService.getPlayerById(playerId);
+        if (player.isPresent()) {
+            Optional<Crop> crop = cropService.getCropById(cropId);
+            if (crop.isPresent()) {
+                Integer price = crop.get().getBuyPrice() * amount;
+                if (player.get().getMoney() - price >= 0) {
+                    player.get().setMoney(player.get().getMoney() - price);
+                    Crop cropToAdd = crop.get();
+                    cropToAdd.setAmount(amount);
+                    cropToAdd.setStage(CropStage.DAY0);
+                    player.get().getCrops().add(cropToAdd);
+                } else {
+                    throw new NotEnoughMoneyException(price, player.get().getMoney());
+                }
+            } else {
                 throw new CropNotFoundException(cropId);
             }
         } else {
