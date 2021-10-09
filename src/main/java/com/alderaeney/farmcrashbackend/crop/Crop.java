@@ -38,11 +38,13 @@ public class Crop {
     @Transient
     private String imageUrl;
     private Integer amount;
+    @NonNull
+    private String fileName;
 
     @ManyToMany(mappedBy = "crops")
     private Set<Player> players;
 
     public String getImageUrl() {
-        return "/images/crops/" + this.stage.toString() + "/" + this.name + ".png";
+        return "/images/crops/" + this.stage.toString() + "/" + this.fileName + ".png";
     }
 }
