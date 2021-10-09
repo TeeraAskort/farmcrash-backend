@@ -37,6 +37,7 @@ public class Crop {
     private CropType type;
     @Transient
     private String imageUrl;
+    private Integer amount;
 
     @ManyToMany(mappedBy = "crops")
     private Set<Player> players;
