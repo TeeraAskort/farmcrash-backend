@@ -37,11 +37,13 @@ public class Crop {
     private CropType type;
     @Transient
     private String imageUrl;
+    @NonNull
+    private String fileName;
 
     @ManyToMany(mappedBy = "crops")
     private Set<Player> players;
 
     public String getImageUrl() {
-        return "/images/crops/" + this.stage.toString() + "/" + this.name + ".png";
+        return "/images/crops/" + this.stage.toString() + "/" + this.fileName + ".png";
     }
 }
