@@ -18,4 +18,9 @@ public class PlayerExceptionController {
         return new ResponseEntity<>("Not enough money to buy the crops<br>Available money: " + exception.availableMoney
                 + "<br>Price to buy the crops: " + exception.price, HttpStatus.BAD_REQUEST);
     }
+
+    @ExceptionHandler(value = UsernameTakenException.class)
+    public ResponseEntity<Object> usernameTakenException(UsernameTakenException exception) {
+        return new ResponseEntity<>("Username already taken: " + exception.name, HttpStatus.BAD_REQUEST);
+    }
 }

@@ -16,6 +16,7 @@ import com.alderaeney.farmcrashbackend.crop.exceptions.CropNotFoundException;
 import com.alderaeney.farmcrashbackend.item.Item;
 import com.alderaeney.farmcrashbackend.player.exceptions.NotEnoughMoneyException;
 import com.alderaeney.farmcrashbackend.player.exceptions.PlayerNotFoundException;
+import com.alderaeney.farmcrashbackend.player.exceptions.UsernameTakenException;
 import com.alderaeney.farmcrashbackend.task.Task;
 import com.alderaeney.farmcrashbackend.task.TaskService;
 import com.alderaeney.farmcrashbackend.task.exceptions.TaskNotFoundException;
@@ -24,6 +25,7 @@ import com.alderaeney.farmcrashbackend.worker.WorkerService;
 import com.alderaeney.farmcrashbackend.worker.exceptions.WorkerNotFoundException;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -63,9 +65,14 @@ public class PlayerController {
 
     @GetMapping(path = "create/{name}")
     public Player createPlayer(@PathVariable("name") String name) {
-        Player player = new Player(name, new ArrayList<Crop>(), new ArrayList<Worker>(), new ArrayList<Item>(),
-                BigInteger.valueOf(1000L), LocalDate.now());
-        return playerService.addPlayer(player);
+        Optional<Player> playerByName = playerService.findPlayerByName(name);
+        if (playerByName.isPresent()) {
+            throw new UsernameTakenException(name);
+        } else {
+            Player player = new Player(name, new ArrayList<Crop>(), new ArrayList<Worker>(), new ArrayList<Item>(),
+                    BigInteger.valueOf(1000L), LocalDate.now());
+            return playerService.addPlayer(player);
+        }
     }
 
     @GetMapping(path = "{playerId}/worker/{workerId}/assignTask/{taskId}")
@@ -127,8 +134,8 @@ public class PlayerController {
             Optional<Crop> crop = cropService.getCropById(cropId);
             if (crop.isPresent()) {
                 Integer price = crop.get().getBuyPrice() * amount;
-                if (player.get().getMoney() - price >= 0) {
-                    player.get().setMoney(player.get().getMoney() - price);
+                if (player.get().getMoney().subtract(BigInteger.valueOf(price)).longValue() >= 0) {
+                    player.get().setMoney(player.get().getMoney().subtract(BigInteger.valueOf(price)));
                     Crop cropToAdd = crop.get();
                     cropToAdd.setAmount(amount);
                     cropToAdd.setStage(CropStage.DAY0);

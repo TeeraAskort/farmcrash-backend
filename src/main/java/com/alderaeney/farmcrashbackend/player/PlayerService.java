@@ -38,4 +38,8 @@ public class PlayerService {
         return repository.saveAndFlush(player);
     }
 
+    public Optional<Player> findPlayerByName(String name) {
+        return repository.findByName(name);
+    }
+
 }

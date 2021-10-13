@@ -13,4 +13,6 @@ public interface PlayerRepository extends JpaRepository<Player, Long> {
     List<Player> findTop5ByOrderByMoneyDesc();
 
     Optional<Player> findTopByOrderByIdDesc();
+
+    Optional<Player> findByName(String name);
 }
