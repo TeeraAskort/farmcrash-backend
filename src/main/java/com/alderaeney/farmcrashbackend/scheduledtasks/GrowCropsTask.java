@@ -10,6 +10,7 @@ import com.alderaeney.farmcrashbackend.player.PlayerService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Transactional;
 
 @Component
 public class GrowCropsTask {
@@ -21,6 +22,7 @@ public class GrowCropsTask {
     }
 
     @Scheduled(fixedRate = 10000)
+    @Transactional
     public void growCrops() {
         List<Player> players = playerService.getAllPlayers();
         for (Player player : players) {

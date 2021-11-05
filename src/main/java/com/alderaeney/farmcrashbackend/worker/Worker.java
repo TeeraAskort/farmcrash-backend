@@ -6,6 +6,7 @@ import javax.persistence.*;
 
 import com.alderaeney.farmcrashbackend.player.Player;
 import com.alderaeney.farmcrashbackend.task.Task;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -32,6 +33,7 @@ public class Worker {
     private Integer age;
     @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private Task taskAssignedTo;
-    @ManyToMany(mappedBy = "workers")
+    @ManyToMany(mappedBy = "workers", fetch = FetchType.EAGER)
+    @JsonIgnore
     private Set<Player> players;
 }

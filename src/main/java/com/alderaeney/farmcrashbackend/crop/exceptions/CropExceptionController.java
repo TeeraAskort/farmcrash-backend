@@ -14,6 +14,7 @@ public class CropExceptionController {
 
     @ExceptionHandler(value = CropNotFarmeableException.class)
     public ResponseEntity<Object> cropNotFarmeableException(CropNotFarmeableException exception) {
-        return new ResponseEntity<>("Crop with id " + exception.id + " isn't farmeable", HttpStatus.NOT_ACCEPTABLE);
+        return new ResponseEntity<>("Crop with id " + exception.crop.name + " isn't farmeable",
+                HttpStatus.NOT_ACCEPTABLE);
     }
 }

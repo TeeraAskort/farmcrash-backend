@@ -2,9 +2,9 @@ package com.alderaeney.farmcrashbackend.worker.exceptions;
 
 public class WorkerNotFoundException extends RuntimeException {
     private static final Long serialVersionUID = 3L;
-    public Long id;
+    public Long index;
 
-    public WorkerNotFoundException(Long id) {
-        this.id = id;
+    public WorkerNotFoundException(Long index) {
+        this.index = index;
     }
 }

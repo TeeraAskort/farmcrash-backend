@@ -69,55 +69,58 @@ public class PlayerController {
         if (playerByName.isPresent()) {
             throw new UsernameTakenException(name);
         } else {
-            Player player = new Player(name, new ArrayList<Crop>(), new ArrayList<Worker>(), new ArrayList<Item>(),
-                    BigInteger.valueOf(1000L), LocalDate.now());
-            return playerService.addPlayer(player);
+            Optional<Crop> crop = cropService.getCropById(1L);
+            if (crop.isPresent()) {
+                ArrayList<Crop> crops = new ArrayList<Crop>();
+                Crop aux = crop.get();
+                aux.setAmount(20);
+                aux.setStage(CropStage.DAY0);
+                crops.add(aux);
+                Player player = new Player(name, crops, new ArrayList<Worker>(), new ArrayList<Item>(),
+                        BigInteger.valueOf(1000L), LocalDate.now());
+                return playerService.addPlayer(player);
+            } else
+                return null;
         }
     }
 
-    @GetMapping(path = "{playerId}/worker/{workerId}/assignTask/{taskId}")
+    @GetMapping(path = "{playerId}/worker/{index}/assignTask/{taskId}")
     @Transactional
-    public void assignTaskToWorker(@PathVariable("playerId") Long playerId, @PathVariable("workerId") Long workerId,
+    public void assignTaskToWorker(@PathVariable("playerId") Long playerId, @PathVariable("index") Long index,
             @PathVariable("taskId") Long taskId) {
         Optional<Player> player = playerService.getPlayerById(playerId);
         if (player.isPresent()) {
-            boolean workerFound = false;
-            for (Worker worker : player.get().getWorkers()) {
-                if (worker.getId().equals(workerId)) {
-                    workerFound = true;
-                    Optional<Task> task = taskService.getTaskById(taskId);
-                    if (task.isPresent()) {
-                        worker.setTaskAssignedTo(task.get());
-                    } else {
-                        throw new TaskNotFoundException(taskId);
-                    }
-                }
-                if (!workerFound) {
-                    throw new WorkerNotFoundException(workerId);
-                }
+            Player play = player.get();
+            try {
+                Worker worker = play.getWorkers().get(index);
+                Promise<Task> task = taskService.getTaskById(taskId);
+                if (task.isPresent()) {
+                    worker.setTaskAssignedTo(task.get());
+                } else
+                    throw new TaskNotFoundException(taskId);
+            } catch (Exception e) {
+                throw new WorkerNotFoundException(index);
             }
         } else {
             throw new PlayerNotFoundException(playerId);
         }
     }
 
-    @GetMapping(path = "{playerId}/crop/{cropId}/farmCrop")
+    @GetMapping(path = "{playerId}/crop/{index}/farmCrop")
     @Transactional
-    public void farmCrop(@PathVariable("playerId") Long playerId, @PathVariable("cropId") Long cropId) {
+    public Player farmCrop(@PathVariable("playerId") Long playerId, @PathVariable("index") Long index) {
         Optional<Player> player = playerService.getPlayerById(playerId);
         if (player.isPresent()) {
-            boolean cropFound = false;
-            for (Crop crop : player.get().getCrops()) {
-                if (crop.getId().equals(cropId)) {
-                    cropFound = true;
-                    if (crop.getStage() == CropStage.READYTOFARM) {
-                        crop.setStage(CropStage.SELL);
-                    } else {
-                        throw new CropNotFarmeableException(cropId);
-                    }
-                }
-            }
-            if (!cropFound) {
+            Player play = player.get();
+            try {
+                Crop crop = play.getCrops().get(index);
+                if (crop.getStage() == CropStage.READYTOFARM) {
+                    crop.setStage(CropStage.SELL);
+                    play.getCrops().set(index, crop);
+                    return play;
+                } else
+                    throw new CropNotFarmeableException(crop);
+            } catch (Exception e) {
                 throw new CropNotFoundException(cropId);
             }
         } else {

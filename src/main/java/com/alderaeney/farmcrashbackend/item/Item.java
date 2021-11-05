@@ -5,6 +5,7 @@ import java.util.Set;
 import javax.persistence.*;
 
 import com.alderaeney.farmcrashbackend.player.Player;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -34,6 +35,7 @@ public class Item {
     @NonNull
     private String imageUrl;
 
-    @ManyToMany(mappedBy = "items")
+    @ManyToMany(mappedBy = "items", fetch = FetchType.EAGER)
+    @JsonIgnore
     private Set<Player> players;
 }

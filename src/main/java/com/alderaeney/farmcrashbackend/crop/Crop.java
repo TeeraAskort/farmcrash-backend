@@ -5,6 +5,7 @@ import java.util.Set;
 import javax.persistence.*;
 
 import com.alderaeney.farmcrashbackend.player.Player;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -37,14 +38,16 @@ public class Crop {
     private CropType type;
     @Transient
     private String imageUrl;
+    @NonNull
     private Integer amount;
     @NonNull
     private String fileName;
 
-    @ManyToMany(mappedBy = "crops")
+    @ManyToMany(mappedBy = "crops", fetch = FetchType.EAGER)
+    @JsonIgnore
     private Set<Player> players;
 
     public String getImageUrl() {
-        return "/images/crops/" + this.stage.toString() + "/" + this.fileName + ".png";
+        return "/crop/" + this.stage.toString() + "/" + this.fileName + ".png";
     }
 }
