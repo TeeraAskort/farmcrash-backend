@@ -9,6 +9,6 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 public class WorkerExceptionController {
     @ExceptionHandler(value = WorkerNotFoundException.class)
     public ResponseEntity<Object> workerNotFoundException(WorkerNotFoundException exception) {
-        return new ResponseEntity<>("Worker number " + exception.index + " was not found", HttpStatus.NOT_FOUND);
+        return new ResponseEntity<>("Worker number " + exception.id + " was not found", HttpStatus.NOT_FOUND);
     }
 }

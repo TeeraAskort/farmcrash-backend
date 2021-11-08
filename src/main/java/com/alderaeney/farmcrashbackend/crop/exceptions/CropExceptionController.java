@@ -9,12 +9,11 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 public class CropExceptionController {
     @ExceptionHandler(value = CropNotFoundException.class)
     public ResponseEntity<Object> cropNotFoundException(CropNotFoundException exception) {
-        return new ResponseEntity<Object>("Crop with id " + exception.id + " doesn't exist", HttpStatus.NOT_FOUND);
+        return new ResponseEntity<>("Crop with id " + exception.id + " doesn't exist", HttpStatus.NOT_FOUND);
     }
 
     @ExceptionHandler(value = CropNotFarmeableException.class)
     public ResponseEntity<Object> cropNotFarmeableException(CropNotFarmeableException exception) {
-        return new ResponseEntity<>("Crop with id " + exception.crop.name + " isn't farmeable",
-                HttpStatus.NOT_ACCEPTABLE);
+        return new ResponseEntity<>("Crop with id " + exception.id + " isn't farmeable", HttpStatus.NOT_ACCEPTABLE);
     }
 }

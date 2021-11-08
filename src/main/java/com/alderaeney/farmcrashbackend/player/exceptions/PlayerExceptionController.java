@@ -23,4 +23,20 @@ public class PlayerExceptionController {
     public ResponseEntity<Object> usernameTakenException(UsernameTakenException exception) {
         return new ResponseEntity<>("Username already taken: " + exception.name, HttpStatus.BAD_REQUEST);
     }
+
+    @ExceptionHandler(value = WorkerNotFoundInPlayerException.class)
+    public ResponseEntity<Object> workerNotFoundInPlayerException(WorkerNotFoundInPlayerException exception) {
+        return new ResponseEntity<>("Worker on index " + exception.index + " not found in player.",
+                HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(value = CropNotFoundInPlayerException.class)
+    public ResponseEntity<Object> cropNotFoundInPlayerException(CropNotFoundInPlayerException exception) {
+        return new ResponseEntity<>("Crop on index " + exception.index + " not found in player.", HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(value = WorkerAlreadyHiredException.class)
+    public ResponseEntity<Object> workerAlreadyHiredException(WorkerAlreadyHiredException exception) {
+        return new ResponseEntity<>("Worker with id " + exception.id + " already hired.", HttpStatus.BAD_REQUEST);
+    }
 }

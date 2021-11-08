@@ -13,10 +13,11 @@ import com.alderaeney.farmcrashbackend.crop.CropService;
 import com.alderaeney.farmcrashbackend.crop.CropStage;
 import com.alderaeney.farmcrashbackend.crop.exceptions.CropNotFarmeableException;
 import com.alderaeney.farmcrashbackend.crop.exceptions.CropNotFoundException;
-import com.alderaeney.farmcrashbackend.item.Item;
+import com.alderaeney.farmcrashbackend.player.exceptions.CropNotFoundInPlayerException;
 import com.alderaeney.farmcrashbackend.player.exceptions.NotEnoughMoneyException;
 import com.alderaeney.farmcrashbackend.player.exceptions.PlayerNotFoundException;
 import com.alderaeney.farmcrashbackend.player.exceptions.UsernameTakenException;
+import com.alderaeney.farmcrashbackend.player.exceptions.WorkerNotFoundInPlayerException;
 import com.alderaeney.farmcrashbackend.task.Task;
 import com.alderaeney.farmcrashbackend.task.TaskService;
 import com.alderaeney.farmcrashbackend.task.exceptions.TaskNotFoundException;
@@ -25,7 +26,6 @@ import com.alderaeney.farmcrashbackend.worker.WorkerService;
 import com.alderaeney.farmcrashbackend.worker.exceptions.WorkerNotFoundException;
 
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -71,13 +71,13 @@ public class PlayerController {
         } else {
             Optional<Crop> crop = cropService.getCropById(1L);
             if (crop.isPresent()) {
-                ArrayList<Crop> crops = new ArrayList<Crop>();
+                ArrayList<Crop> crops = new ArrayList<>();
                 Crop aux = crop.get();
                 aux.setAmount(20);
                 aux.setStage(CropStage.DAY0);
                 crops.add(aux);
-                Player player = new Player(name, crops, new ArrayList<Worker>(), new ArrayList<Item>(),
-                        BigInteger.valueOf(1000L), LocalDate.now());
+                Player player = new Player(name, crops, new ArrayList<>(), new ArrayList<>(), BigInteger.valueOf(1000L),
+                        LocalDate.now());
                 return playerService.addPlayer(player);
             } else
                 return null;
@@ -86,20 +86,22 @@ public class PlayerController {
 
     @GetMapping(path = "{playerId}/worker/{index}/assignTask/{taskId}")
     @Transactional
-    public void assignTaskToWorker(@PathVariable("playerId") Long playerId, @PathVariable("index") Long index,
+    public Player assignTaskToWorker(@PathVariable("playerId") Long playerId, @PathVariable("index") Integer index,
             @PathVariable("taskId") Long taskId) {
         Optional<Player> player = playerService.getPlayerById(playerId);
         if (player.isPresent()) {
             Player play = player.get();
             try {
                 Worker worker = play.getWorkers().get(index);
-                Promise<Task> task = taskService.getTaskById(taskId);
+                Optional<Task> task = taskService.getTaskById(taskId);
                 if (task.isPresent()) {
                     worker.setTaskAssignedTo(task.get());
+                    play.getWorkers().set(index, worker);
+                    return play;
                 } else
                     throw new TaskNotFoundException(taskId);
             } catch (Exception e) {
-                throw new WorkerNotFoundException(index);
+                throw new WorkerNotFoundInPlayerException(index);
             }
         } else {
             throw new PlayerNotFoundException(playerId);
@@ -108,7 +110,7 @@ public class PlayerController {
 
     @GetMapping(path = "{playerId}/crop/{index}/farmCrop")
     @Transactional
-    public Player farmCrop(@PathVariable("playerId") Long playerId, @PathVariable("index") Long index) {
+    public Player farmCrop(@PathVariable("playerId") Long playerId, @PathVariable("index") Integer index) {
         Optional<Player> player = playerService.getPlayerById(playerId);
         if (player.isPresent()) {
             Player play = player.get();
@@ -119,9 +121,9 @@ public class PlayerController {
                     play.getCrops().set(index, crop);
                     return play;
                 } else
-                    throw new CropNotFarmeableException(crop);
+                    throw new CropNotFarmeableException(crop.getId());
             } catch (Exception e) {
-                throw new CropNotFoundException(cropId);
+                throw new CropNotFoundInPlayerException(index);
             }
         } else {
             throw new PlayerNotFoundException(playerId);
@@ -130,19 +132,21 @@ public class PlayerController {
 
     @GetMapping(path = "{playerId}/crop/{cropId}/buy/{amount}")
     @Transactional
-    public void buyCrop(@PathVariable("playerId") Long playerId, @PathVariable("cropId") Long cropId,
+    public Player buyCrop(@PathVariable("playerId") Long playerId, @PathVariable("cropId") Long cropId,
             @PathVariable("amount") Integer amount) {
         Optional<Player> player = playerService.getPlayerById(playerId);
         if (player.isPresent()) {
+            Player play = player.get();
             Optional<Crop> crop = cropService.getCropById(cropId);
             if (crop.isPresent()) {
                 Integer price = crop.get().getBuyPrice() * amount;
-                if (player.get().getMoney().subtract(BigInteger.valueOf(price)).longValue() >= 0) {
-                    player.get().setMoney(player.get().getMoney().subtract(BigInteger.valueOf(price)));
+                if (play.getMoney().subtract(BigInteger.valueOf(price)).longValue() >= 0) {
+                    play.setMoney(play.getMoney().subtract(BigInteger.valueOf(price)));
                     Crop cropToAdd = crop.get();
                     cropToAdd.setAmount(amount);
                     cropToAdd.setStage(CropStage.DAY0);
-                    player.get().getCrops().add(cropToAdd);
+                    play.getCrops().add(cropToAdd);
+                    return play;
                 } else {
                     throw new NotEnoughMoneyException(price, player.get().getMoney());
                 }
@@ -159,14 +163,28 @@ public class PlayerController {
     public void hireWorker(@PathVariable("playerId") Long playerId, @PathVariable("workerId") Long workerId) {
         Optional<Player> player = playerService.getPlayerById(playerId);
         if (player.isPresent()) {
+            Player play = player.get();
             Optional<Worker> worker = workerService.getWorkerById(workerId);
             if (worker.isPresent()) {
-                player.get().getWorkers().add(worker.get());
+                if (!checkIfWorkerIsAlreadyHired(play.getWorkers(), worker.get().getId())) {
+                    play.getWorkers().add(worker.get());
+                } else {
+                    throw new WorkerAlreadyHiredException(worker.get().getId());
+                }
             } else {
                 throw new WorkerNotFoundException(workerId);
             }
         } else {
             throw new PlayerNotFoundException(playerId);
         }
+    }
+
+    private boolean checkIfWorkerIsAlreadyHired(ArrayList<Worker> workers, Long workerId) {
+        for (Worker worker : workers) {
+            if (worker.getId().equals(workerId)) {
+                return true;
+            }
+        }
+        return false;
     }
 }

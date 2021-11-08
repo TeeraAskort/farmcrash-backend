@@ -31,9 +31,17 @@ public class Worker {
     private String name;
     @NonNull
     private Integer age;
+    @Transient
+    private String imageUrl;
+    @NonNull
+    private String filename;
     @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
     private Task taskAssignedTo;
     @ManyToMany(mappedBy = "workers", fetch = FetchType.EAGER)
     @JsonIgnore
     private Set<Player> players;
+
+    public String getImageUrl() {
+        return "/worker/" + this.filename + ".png";
+    }
 }

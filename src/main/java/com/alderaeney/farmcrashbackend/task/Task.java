@@ -25,4 +25,6 @@ public class Task {
     private TaskType type;
     @NonNull
     private Integer daysLeft;
+    @NonNull
+    private Integer cost;
 }
