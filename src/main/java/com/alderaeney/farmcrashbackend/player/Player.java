@@ -2,8 +2,10 @@ package com.alderaeney.farmcrashbackend.player;
 
 import java.math.BigInteger;
 import java.time.LocalDate;
+import java.util.ArrayList;
 import java.util.List;
 
+import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
@@ -26,6 +28,9 @@ import com.alderaeney.farmcrashbackend.crop.Crop;
 import com.alderaeney.farmcrashbackend.item.Item;
 import com.alderaeney.farmcrashbackend.worker.Worker;
 
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
 @Entity
 @Table
 @AllArgsConstructor
@@ -33,7 +38,7 @@ import com.alderaeney.farmcrashbackend.worker.Worker;
 @RequiredArgsConstructor
 @Getter
 @Setter
-public class Player {
+public class Player implements UserDetails {
     @Id
     @SequenceGenerator(name = "player_sequence", sequenceName = "player_sequence", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "player_sequence")
@@ -56,5 +61,33 @@ public class Player {
     private BigInteger money;
     @NonNull
     private LocalDate lastTimePlayed;
+    @NonNull
+    private String password;
+    @ElementCollection(targetClass = GrantedAuthority.class, fetch = FetchType.EAGER)
+    private List<GrantedAuthority> authorities = new ArrayList<>();
 
+    @Override
+    public String getUsername() {
+        return this.name;
+    }
+
+    @Override
+    public boolean isAccountNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isAccountNonLocked() {
+        return true;
+    }
+
+    @Override
+    public boolean isCredentialsNonExpired() {
+        return true;
+    }
+
+    @Override
+    public boolean isEnabled() {
+        return true;
+    }
 }

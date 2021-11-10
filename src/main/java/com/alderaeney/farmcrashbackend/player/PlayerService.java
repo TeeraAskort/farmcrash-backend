@@ -6,10 +6,13 @@ import java.util.Optional;
 import javax.transaction.Transactional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
 @Service
-public class PlayerService {
+public class PlayerService implements UserDetailsService {
 
     private final PlayerRepository repository;
 
@@ -40,6 +43,15 @@ public class PlayerService {
 
     public Optional<Player> findPlayerByName(String name) {
         return repository.findByName(name);
+    }
+
+    @Override
+    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
+        Optional<Player> player = repository.findByName(username);
+        if (player.isPresent()) {
+            return player.get();
+        }
+        return null;
     }
 
 }

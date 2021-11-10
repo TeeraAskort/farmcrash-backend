@@ -17,6 +17,7 @@ import com.alderaeney.farmcrashbackend.player.exceptions.CropNotFoundInPlayerExc
 import com.alderaeney.farmcrashbackend.player.exceptions.NotEnoughMoneyException;
 import com.alderaeney.farmcrashbackend.player.exceptions.PlayerNotFoundException;
 import com.alderaeney.farmcrashbackend.player.exceptions.UsernameTakenException;
+import com.alderaeney.farmcrashbackend.player.exceptions.WorkerAlreadyHiredException;
 import com.alderaeney.farmcrashbackend.player.exceptions.WorkerNotFoundInPlayerException;
 import com.alderaeney.farmcrashbackend.task.Task;
 import com.alderaeney.farmcrashbackend.task.TaskService;
@@ -26,8 +27,12 @@ import com.alderaeney.farmcrashbackend.worker.WorkerService;
 import com.alderaeney.farmcrashbackend.worker.exceptions.WorkerNotFoundException;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -38,14 +43,16 @@ public class PlayerController {
     private final TaskService taskService;
     private final CropService cropService;
     private final WorkerService workerService;
+    private final PasswordEncoder passwordEncoder;
 
     @Autowired
     public PlayerController(PlayerService playerService, TaskService taskService, CropService cropService,
-            WorkerService workerService) {
+            WorkerService workerService, PasswordEncoder passwordEncoder) {
         this.playerService = playerService;
         this.taskService = taskService;
         this.cropService = cropService;
         this.workerService = workerService;
+        this.passwordEncoder = passwordEncoder;
     }
 
     @GetMapping(path = "{playerId}")
@@ -63,11 +70,11 @@ public class PlayerController {
         return playerService.getLeaderBoard();
     }
 
-    @GetMapping(path = "create/{name}")
-    public Player createPlayer(@PathVariable("name") String name) {
-        Optional<Player> playerByName = playerService.findPlayerByName(name);
+    @PostMapping(path = "create")
+    public Player createPlayer(@RequestBody PlayerLogin userData) {
+        Optional<Player> playerByName = playerService.findPlayerByName(userData.getName());
         if (playerByName.isPresent()) {
-            throw new UsernameTakenException(name);
+            throw new UsernameTakenException(userData.getName());
         } else {
             Optional<Crop> crop = cropService.getCropById(1L);
             if (crop.isPresent()) {
@@ -76,8 +83,9 @@ public class PlayerController {
                 aux.setAmount(20);
                 aux.setStage(CropStage.DAY0);
                 crops.add(aux);
-                Player player = new Player(name, crops, new ArrayList<>(), new ArrayList<>(), BigInteger.valueOf(1000L),
-                        LocalDate.now());
+                Player player = new Player(userData.getName(), crops, new ArrayList<>(), new ArrayList<>(),
+                        BigInteger.valueOf(1000L), LocalDate.now(), passwordEncoder.encode(userData.getPassword()));
+                player.setAuthorities(List.of(new SimpleGrantedAuthority("PLAYER")));
                 return playerService.addPlayer(player);
             } else
                 return null;
@@ -179,7 +187,7 @@ public class PlayerController {
         }
     }
 
-    private boolean checkIfWorkerIsAlreadyHired(ArrayList<Worker> workers, Long workerId) {
+    private boolean checkIfWorkerIsAlreadyHired(List<Worker> workers, Long workerId) {
         for (Worker worker : workers) {
             if (worker.getId().equals(workerId)) {
                 return true;
