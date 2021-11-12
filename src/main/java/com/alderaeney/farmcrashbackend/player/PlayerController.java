@@ -15,6 +15,7 @@ import com.alderaeney.farmcrashbackend.crop.exceptions.CropNotFarmeableException
 import com.alderaeney.farmcrashbackend.crop.exceptions.CropNotFoundException;
 import com.alderaeney.farmcrashbackend.player.exceptions.CropNotFoundInPlayerException;
 import com.alderaeney.farmcrashbackend.player.exceptions.NotEnoughMoneyException;
+import com.alderaeney.farmcrashbackend.player.exceptions.PlayerByUSernameNotFoundException;
 import com.alderaeney.farmcrashbackend.player.exceptions.PlayerNotFoundException;
 import com.alderaeney.farmcrashbackend.player.exceptions.UsernameTakenException;
 import com.alderaeney.farmcrashbackend.player.exceptions.WorkerAlreadyHiredException;
@@ -27,7 +28,9 @@ import com.alderaeney.farmcrashbackend.worker.WorkerService;
 import com.alderaeney.farmcrashbackend.worker.exceptions.WorkerNotFoundException;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -36,8 +39,11 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import lombok.extern.slf4j.Slf4j;
+
 @RestController
 @RequestMapping(path = "api/v1/player")
+@Slf4j
 public class PlayerController {
     private final PlayerService playerService;
     private final TaskService taskService;
@@ -55,13 +61,15 @@ public class PlayerController {
         this.passwordEncoder = passwordEncoder;
     }
 
-    @GetMapping(path = "{playerId}")
-    public Player getPlayerById(@PathVariable("playerId") Long id) {
-        Optional<Player> player = playerService.getPlayerById(id);
+    @GetMapping(path = "login")
+    public Player getPlayerById() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+        Optional<Player> player = playerService.findPlayerByName(username);
         if (player.isPresent()) {
             return player.get();
         } else {
-            throw new PlayerNotFoundException(id);
+            throw new PlayerByUSernameNotFoundException(username);
         }
     }
 
@@ -92,11 +100,12 @@ public class PlayerController {
         }
     }
 
-    @GetMapping(path = "{playerId}/worker/{index}/assignTask/{taskId}")
+    @GetMapping(path = "worker/{index}/assignTask/{taskId}")
     @Transactional
-    public Player assignTaskToWorker(@PathVariable("playerId") Long playerId, @PathVariable("index") Integer index,
-            @PathVariable("taskId") Long taskId) {
-        Optional<Player> player = playerService.getPlayerById(playerId);
+    public Player assignTaskToWorker(@PathVariable("index") Integer index, @PathVariable("taskId") Long taskId) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+        Optional<Player> player = playerService.findPlayerByName(username);
         if (player.isPresent()) {
             Player play = player.get();
             try {
@@ -112,14 +121,17 @@ public class PlayerController {
                 throw new WorkerNotFoundInPlayerException(index);
             }
         } else {
-            throw new PlayerNotFoundException(playerId);
+            throw new PlayerByUSernameNotFoundException(username);
         }
     }
 
-    @GetMapping(path = "{playerId}/crop/{index}/farmCrop")
+    @GetMapping(path = "crop/{index}/farmCrop")
     @Transactional
-    public Player farmCrop(@PathVariable("playerId") Long playerId, @PathVariable("index") Integer index) {
-        Optional<Player> player = playerService.getPlayerById(playerId);
+    public Player farmCrop(@PathVariable("index") Integer index) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+        log.info(username);
+        Optional<Player> player = playerService.findPlayerByName(username);
         if (player.isPresent()) {
             Player play = player.get();
             try {
@@ -134,15 +146,16 @@ public class PlayerController {
                 throw new CropNotFoundInPlayerException(index);
             }
         } else {
-            throw new PlayerNotFoundException(playerId);
+            throw new PlayerByUSernameNotFoundException(username);
         }
     }
 
-    @GetMapping(path = "{playerId}/crop/{cropId}/buy/{amount}")
+    @GetMapping(path = "crop/{cropId}/buy/{amount}")
     @Transactional
-    public Player buyCrop(@PathVariable("playerId") Long playerId, @PathVariable("cropId") Long cropId,
-            @PathVariable("amount") Integer amount) {
-        Optional<Player> player = playerService.getPlayerById(playerId);
+    public Player buyCrop(@PathVariable("cropId") Long cropId, @PathVariable("amount") Integer amount) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+        Optional<Player> player = playerService.findPlayerByName(username);
         if (player.isPresent()) {
             Player play = player.get();
             Optional<Crop> crop = cropService.getCropById(cropId);
@@ -162,14 +175,16 @@ public class PlayerController {
                 throw new CropNotFoundException(cropId);
             }
         } else {
-            throw new PlayerNotFoundException(playerId);
+            throw new PlayerByUSernameNotFoundException(username);
         }
     }
 
-    @GetMapping(path = "{playerId}/worker/{workerId}/hire")
+    @GetMapping(path = "worker/{workerId}/hire")
     @Transactional
-    public void hireWorker(@PathVariable("playerId") Long playerId, @PathVariable("workerId") Long workerId) {
-        Optional<Player> player = playerService.getPlayerById(playerId);
+    public void hireWorker(@PathVariable("workerId") Long workerId) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+        Optional<Player> player = playerService.findPlayerByName(username);
         if (player.isPresent()) {
             Player play = player.get();
             Optional<Worker> worker = workerService.getWorkerById(workerId);
@@ -183,7 +198,7 @@ public class PlayerController {
                 throw new WorkerNotFoundException(workerId);
             }
         } else {
-            throw new PlayerNotFoundException(playerId);
+            throw new PlayerByUSernameNotFoundException(username);
         }
     }
 

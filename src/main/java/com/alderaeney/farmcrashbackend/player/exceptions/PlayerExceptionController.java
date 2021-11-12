@@ -39,4 +39,10 @@ public class PlayerExceptionController {
     public ResponseEntity<Object> workerAlreadyHiredException(WorkerAlreadyHiredException exception) {
         return new ResponseEntity<>("Worker with id " + exception.id + " already hired.", HttpStatus.BAD_REQUEST);
     }
+
+    @ExceptionHandler(value = PlayerByUSernameNotFoundException.class)
+    public ResponseEntity<Object> playerByUsernameNotFoundException(PlayerByUSernameNotFoundException exception) {
+        return new ResponseEntity<>("Player with username " + exception.username + " was not found in the database",
+                HttpStatus.NOT_FOUND);
+    }
 }
