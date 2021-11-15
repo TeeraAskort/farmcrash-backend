@@ -21,7 +21,7 @@ import lombok.Setter;
 @RequiredArgsConstructor
 @Getter
 @Setter
-public class Crop {
+public class Crop implements Cloneable {
     @Id
     @SequenceGenerator(name = "crop_sequence", sequenceName = "crop_sequence", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "crop_sequence")
@@ -43,11 +43,12 @@ public class Crop {
     @NonNull
     private String fileName;
 
-    @ManyToMany(mappedBy = "crops", fetch = FetchType.EAGER)
-    @JsonIgnore
-    private Set<Player> players;
-
     public String getImageUrl() {
         return "/crop/" + this.stage.toString() + "/" + this.fileName + ".png";
+    }
+
+    @Override
+    public Object clone() throws CloneNotSupportedException {
+        return super.clone();
     }
 }

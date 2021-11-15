@@ -46,16 +46,13 @@ public class Player implements UserDetails {
     @NonNull
     private String name;
     @NonNull
-    @ManyToMany
-    @JoinTable(name = "player_crop", joinColumns = @JoinColumn(name = "player_id"), inverseJoinColumns = @JoinColumn(name = "crop_id"))
+    @ElementCollection(targetClass = Crop.class, fetch = FetchType.LAZY)
     private List<Crop> crops;
     @NonNull
-    @ManyToMany
-    @JoinTable(name = "player_worker", joinColumns = @JoinColumn(name = "player_id"), inverseJoinColumns = @JoinColumn(name = "worker_id"))
+    @ElementCollection(targetClass = Worker.class, fetch = FetchType.LAZY)
     private List<Worker> workers;
     @NonNull
-    @ManyToMany
-    @JoinTable(name = "player_item", joinColumns = @JoinColumn(name = "player_id"), inverseJoinColumns = @JoinColumn(name = "item_id"))
+    @ElementCollection(targetClass = Item.class, fetch = FetchType.LAZY)
     private List<Item> items;
     @NonNull
     private BigInteger money;

@@ -22,7 +22,7 @@ public class CropController {
 
     @GetMapping(path = "all")
     public List<Crop> getAllCrops() {
-        return service.getAllCrops();
+        return service.getAllByStageCrops(CropStage.BUY);
     }
 
     @GetMapping(path = "{cropId}")

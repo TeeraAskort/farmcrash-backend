@@ -35,11 +35,11 @@ public class DoWorkTask {
 
         for (Player player : players) {
             for (Worker worker : player.getWorkers()) {
-                Task task = worker.getTaskAssignedTo();
+                Task task = (Task) worker.getTaskAssignedTo().toArray()[0];
                 if (task != null) {
                     task.setDaysLeft(task.getDaysLeft() - 1);
                     if (task.getDaysLeft() <= 0) {
-                        worker.setTaskAssignedTo(null);
+                        worker.getTaskAssignedTo().remove(task);
                         if (task.getType() == TaskType.FISHING) {
                             Item item = itemService.findRandomItemByType(ItemType.FISH);
                             player.getItems().add(item);

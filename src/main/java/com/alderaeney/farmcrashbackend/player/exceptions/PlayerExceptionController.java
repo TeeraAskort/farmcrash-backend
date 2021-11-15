@@ -45,4 +45,9 @@ public class PlayerExceptionController {
         return new ResponseEntity<>("Player with username " + exception.username + " was not found in the database",
                 HttpStatus.NOT_FOUND);
     }
+
+    @ExceptionHandler(value = IndexOutOfBoundsException.class)
+    public ResponseEntity<Object> indexOutOfBoundsException(IndexOutOfBoundsException exception) {
+        return new ResponseEntity<>("Index " + exception.index + " is out of bounds", HttpStatus.BAD_REQUEST);
+    }
 }

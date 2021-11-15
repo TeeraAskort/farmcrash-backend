@@ -22,8 +22,6 @@ public class CropConfig {
                                         "purple-potato");
                         Crop redOnion = new Crop(CropStage.BUY, "Red Onion", 175, 100, CropType.NOTREUSABLE, 1,
                                         "red-onion");
-                        Crop redPotato = new Crop(CropStage.BUY, "Red Potato", 200, 125, CropType.NOTREUSABLE, 1,
-                                        "red-potato");
                         Crop scallion = new Crop(CropStage.BUY, "Scallion", 100, 25, CropType.NOTREUSABLE, 1,
                                         "scallion");
                         Crop shallot = new Crop(CropStage.BUY, "Shallot", 75, 20, CropType.NOTREUSABLE, 1, "shallot");
@@ -34,7 +32,7 @@ public class CropConfig {
                                         "white-carrot");
 
                         repository.saveAll(List.of(carrot, daikon, europeanRadish, onion, potato, purplePotato,
-                                        redOnion, redPotato, scallion, shallot, sweetPotato, turnip, whiteCarrot));
+                                        redOnion, scallion, shallot, sweetPotato, turnip, whiteCarrot));
                 };
         }
 

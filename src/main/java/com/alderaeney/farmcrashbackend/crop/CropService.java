@@ -16,12 +16,25 @@ public class CropService {
         this.repository = repository;
     }
 
-    public List<Crop> getAllCrops() {
-        return repository.findAll();
+    public List<Crop> getAllByStageCrops(CropStage stage) {
+        Optional<List<Crop>> crops = repository.findAllByStage(stage);
+        if (crops.isPresent()) {
+            return crops.get();
+        } else {
+            return null;
+        }
     }
 
     public Optional<Crop> getCropById(Long id) {
         return repository.findById(id);
+    }
+
+    public void addCrop(Crop crop) {
+        repository.save(crop);
+    }
+
+    public void removeCrop(Long id) {
+        repository.deleteById(id);
     }
 
 }

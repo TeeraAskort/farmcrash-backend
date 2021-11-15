@@ -22,7 +22,7 @@ import lombok.Setter;
 @RequiredArgsConstructor
 @Getter
 @Setter
-public class Worker {
+public class Worker implements Cloneable {
     @Id
     @SequenceGenerator(name = "worker_sequence", sequenceName = "worker_sequence", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "worker_sequence")
@@ -35,13 +35,16 @@ public class Worker {
     private String imageUrl;
     @NonNull
     private String filename;
-    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
-    private Task taskAssignedTo;
-    @ManyToMany(mappedBy = "workers", fetch = FetchType.EAGER)
-    @JsonIgnore
-    private Set<Player> players;
+
+    @ElementCollection(targetClass = Task.class, fetch = FetchType.EAGER)
+    private Set<Task> taskAssignedTo;
 
     public String getImageUrl() {
         return "/worker/" + this.filename + ".png";
+    }
+
+    @Override
+    protected Object clone() throws CloneNotSupportedException {
+        return super.clone();
     }
 }

@@ -14,6 +14,7 @@ import com.alderaeney.farmcrashbackend.crop.CropStage;
 import com.alderaeney.farmcrashbackend.crop.exceptions.CropNotFarmeableException;
 import com.alderaeney.farmcrashbackend.crop.exceptions.CropNotFoundException;
 import com.alderaeney.farmcrashbackend.player.exceptions.CropNotFoundInPlayerException;
+import com.alderaeney.farmcrashbackend.player.exceptions.IndexOutOfBoundsException;
 import com.alderaeney.farmcrashbackend.player.exceptions.NotEnoughMoneyException;
 import com.alderaeney.farmcrashbackend.player.exceptions.PlayerByUSernameNotFoundException;
 import com.alderaeney.farmcrashbackend.player.exceptions.PlayerNotFoundException;
@@ -79,7 +80,7 @@ public class PlayerController {
     }
 
     @PostMapping(path = "create")
-    public Player createPlayer(@RequestBody PlayerLogin userData) {
+    public Player createPlayer(@RequestBody PlayerLogin userData) throws CloneNotSupportedException {
         Optional<Player> playerByName = playerService.findPlayerByName(userData.getName());
         if (playerByName.isPresent()) {
             throw new UsernameTakenException(userData.getName());
@@ -87,9 +88,10 @@ public class PlayerController {
             Optional<Crop> crop = cropService.getCropById(1L);
             if (crop.isPresent()) {
                 ArrayList<Crop> crops = new ArrayList<>();
-                Crop aux = crop.get();
-                aux.setAmount(20);
-                aux.setStage(CropStage.DAY0);
+                Crop aux = new Crop(CropStage.DAY0, crop.get().getName(), crop.get().getSellPrice(),
+                        crop.get().getBuyPrice(), crop.get().getType(), 20, crop.get().getFileName());
+
+                cropService.addCrop(aux);
                 crops.add(aux);
                 Player player = new Player(userData.getName(), crops, new ArrayList<>(), new ArrayList<>(),
                         BigInteger.valueOf(1000L), LocalDate.now(), passwordEncoder.encode(userData.getPassword()));
@@ -112,7 +114,7 @@ public class PlayerController {
                 Worker worker = play.getWorkers().get(index);
                 Optional<Task> task = taskService.getTaskById(taskId);
                 if (task.isPresent()) {
-                    worker.setTaskAssignedTo(task.get());
+                    worker.getTaskAssignedTo().add(task.get());
                     play.getWorkers().set(index, worker);
                     return play;
                 } else
@@ -137,8 +139,16 @@ public class PlayerController {
             try {
                 Crop crop = play.getCrops().get(index);
                 if (crop.getStage() == CropStage.READYTOFARM) {
-                    crop.setStage(CropStage.SELL);
-                    play.getCrops().set(index, crop);
+                    int aux = checkIfCropExistsAndIsReadyToSell(play.getCrops(), crop.getName());
+                    if (aux > -1) {
+                        Crop cropToAdd = play.getCrops().get(aux);
+                        cropToAdd.setAmount(cropToAdd.getAmount() + crop.getAmount());
+                        play.getCrops().remove(crop);
+                        play.getCrops().set(aux, cropToAdd);
+                    } else {
+                        crop.setStage(CropStage.SELL);
+                        play.getCrops().set(index, crop);
+                    }
                     return play;
                 } else
                     throw new CropNotFarmeableException(crop.getId());
@@ -163,9 +173,9 @@ public class PlayerController {
                 Integer price = crop.get().getBuyPrice() * amount;
                 if (play.getMoney().subtract(BigInteger.valueOf(price)).longValue() >= 0) {
                     play.setMoney(play.getMoney().subtract(BigInteger.valueOf(price)));
-                    Crop cropToAdd = crop.get();
-                    cropToAdd.setAmount(amount);
-                    cropToAdd.setStage(CropStage.DAY0);
+                    Crop cropToAdd = new Crop(CropStage.DAY0, crop.get().getName(), crop.get().getSellPrice(),
+                            crop.get().getBuyPrice(), crop.get().getType(), amount, crop.get().getFileName());
+                    cropService.addCrop(cropToAdd);
                     play.getCrops().add(cropToAdd);
                     return play;
                 } else {
@@ -202,6 +212,29 @@ public class PlayerController {
         }
     }
 
+    @GetMapping(path = "crop/{index}/sell")
+    @Transactional
+    public Player sellCrop(@PathVariable("index") Integer index) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+        Optional<Player> player = playerService.findPlayerByName(username);
+        if (player.isPresent()) {
+            Player play = player.get();
+            if (index >= 0 && index < play.getCrops().size()) {
+                Crop crop = play.getCrops().get(index);
+                Integer price = crop.getSellPrice() * crop.getAmount();
+                play.setMoney(play.getMoney().add(BigInteger.valueOf(price)));
+                play.getCrops().remove(crop);
+                cropService.removeCrop(crop.getId());
+                return play;
+            } else {
+                throw new IndexOutOfBoundsException(index);
+            }
+        } else {
+            throw new PlayerByUSernameNotFoundException(username);
+        }
+    }
+
     private boolean checkIfWorkerIsAlreadyHired(List<Worker> workers, Long workerId) {
         for (Worker worker : workers) {
             if (worker.getId().equals(workerId)) {
@@ -209,5 +242,15 @@ public class PlayerController {
             }
         }
         return false;
+    }
+
+    private int checkIfCropExistsAndIsReadyToSell(List<Crop> crops, String cropName) {
+        for (int i = 0; i < crops.size(); i++) {
+            Crop crop = crops.get(i);
+            if (crop.getName().equals(cropName) && crop.getStage() == CropStage.SELL) {
+                return i;
+            }
+        }
+        return -1;
     }
 }

@@ -21,7 +21,7 @@ import lombok.Setter;
 @RequiredArgsConstructor
 @Getter
 @Setter
-public class Item {
+public class Item implements Cloneable {
     @Id
     @SequenceGenerator(name = "item_sequence", sequenceName = "item_sequence", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "item_sequence")
@@ -35,7 +35,8 @@ public class Item {
     @NonNull
     private String imageUrl;
 
-    @ManyToMany(mappedBy = "items", fetch = FetchType.EAGER)
-    @JsonIgnore
-    private Set<Player> players;
+    @Override
+    protected Object clone() throws CloneNotSupportedException {
+        return super.clone();
+    }
 }
