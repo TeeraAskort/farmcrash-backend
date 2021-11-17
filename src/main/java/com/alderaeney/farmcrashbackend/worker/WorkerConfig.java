@@ -12,14 +12,14 @@ public class WorkerConfig {
     @Bean
     CommandLineRunner workerConfiguration(WorkerRepository repository) {
         return args -> {
-            Worker clark = new Worker("Clark", 18, "clark");
-            Worker david = new Worker("David", 22, "david");
-            Worker jonas = new Worker("Jonas", 30, "jonas");
-            Worker lindsay = new Worker("Lindsay", 20, "lindsay");
-            Worker mariam = new Worker("Mariam", 26, "mariam");
-            Worker michael = new Worker("Michael", 40, "michael");
-            Worker stefanie = new Worker("Stefanie", 18, "stefanie");
-            Worker steffan = new Worker("Steffan", 32, "steffan");
+            Worker clark = new Worker("Clark", 18, "clark", Hired.NOT_HIRED, 1000);
+            Worker david = new Worker("David", 22, "david", Hired.NOT_HIRED, 1000);
+            Worker jonas = new Worker("Jonas", 30, "jonas", Hired.NOT_HIRED, 1000);
+            Worker lindsay = new Worker("Lindsay", 20, "lindsay", Hired.NOT_HIRED, 1000);
+            Worker mariam = new Worker("Mariam", 26, "mariam", Hired.NOT_HIRED, 1000);
+            Worker michael = new Worker("Michael", 40, "michael", Hired.NOT_HIRED, 1000);
+            Worker stefanie = new Worker("Stefanie", 18, "stefanie", Hired.NOT_HIRED, 1000);
+            Worker steffan = new Worker("Steffan", 32, "steffan", Hired.NOT_HIRED, 1000);
 
             repository.saveAll(List.of(clark, david, jonas, lindsay, mariam, michael, stefanie, steffan));
         };

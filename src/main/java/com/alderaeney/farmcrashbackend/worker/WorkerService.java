@@ -20,8 +20,20 @@ public class WorkerService {
         return repository.findAll();
     }
 
+    public List<Worker> getAllNotHiredWorkers() {
+        return repository.getAllWorkerByHired(Hired.NOT_HIRED);
+    }
+
     public Optional<Worker> getWorkerById(Long id) {
         return repository.findById(id);
+    }
+
+    public void insertWorker(Worker worker) {
+        repository.save(worker);
+    }
+
+    public void removeWorker(Worker worker) {
+        repository.delete(worker);
     }
 
 }

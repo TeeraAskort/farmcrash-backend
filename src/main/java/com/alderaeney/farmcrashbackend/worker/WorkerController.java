@@ -24,7 +24,7 @@ public class WorkerController {
 
     @GetMapping(path = "all")
     public List<Worker> getAllWorkers() {
-        return workerService.getAllWorkers();
+        return workerService.getAllNotHiredWorkers();
     }
 
     @GetMapping(path = "{workerId}")

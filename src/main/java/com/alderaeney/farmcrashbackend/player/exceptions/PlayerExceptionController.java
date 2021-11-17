@@ -50,4 +50,16 @@ public class PlayerExceptionController {
     public ResponseEntity<Object> indexOutOfBoundsException(IndexOutOfBoundsException exception) {
         return new ResponseEntity<>("Index " + exception.index + " is out of bounds", HttpStatus.BAD_REQUEST);
     }
+
+    @ExceptionHandler(value = NotEnoughMoneyToHireException.class)
+    public ResponseEntity<Object> notEnoughMoneyToHireException(NotEnoughMoneyToHireException exception) {
+        return new ResponseEntity<>("Not enough money to hire worker<br>Available money: " + exception.money
+                + "<br>Cost: " + exception.cost, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(value = NotEnoughMoneyToPerformTaskException.class)
+    public ResponseEntity<Object> notEnoughMoneyToPerformTaskException(NotEnoughMoneyToPerformTaskException exception) {
+        return new ResponseEntity<>("Not enough money to perform task<br>Available money: " + exception.money
+                + "<br>Cost: " + exception.cost, HttpStatus.BAD_REQUEST);
+    }
 }

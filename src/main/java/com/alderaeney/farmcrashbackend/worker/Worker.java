@@ -35,9 +35,13 @@ public class Worker implements Cloneable {
     private String imageUrl;
     @NonNull
     private String filename;
+    @NonNull
+    private Hired hired;
+    @NonNull
+    private Integer costOfHiring;
 
-    @ElementCollection(targetClass = Task.class, fetch = FetchType.EAGER)
-    private Set<Task> taskAssignedTo;
+    @ManyToOne(cascade = CascadeType.ALL, fetch = FetchType.EAGER)
+    private Task taskAssignedTo;
 
     public String getImageUrl() {
         return "/worker/" + this.filename + ".png";

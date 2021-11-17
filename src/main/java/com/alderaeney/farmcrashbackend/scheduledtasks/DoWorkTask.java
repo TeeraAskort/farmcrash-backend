@@ -16,17 +16,20 @@ import com.alderaeney.farmcrashbackend.item.ItemService;
 import com.alderaeney.farmcrashbackend.item.ItemType;
 import com.alderaeney.farmcrashbackend.player.Player;
 import com.alderaeney.farmcrashbackend.task.Task;
+import com.alderaeney.farmcrashbackend.task.TaskRepository;
 
 @Component
 public class DoWorkTask {
 
     private final PlayerService playerService;
     private final ItemService itemService;
+    private final TaskRepository taskRepository;
 
     @Autowired
-    public DoWorkTask(PlayerService playerService, ItemService itemService) {
+    public DoWorkTask(PlayerService playerService, ItemService itemService, TaskRepository taskRepository) {
         this.playerService = playerService;
         this.itemService = itemService;
+        this.taskRepository = taskRepository;
     }
 
     @Scheduled(fixedRate = 10000)
@@ -35,11 +38,12 @@ public class DoWorkTask {
 
         for (Player player : players) {
             for (Worker worker : player.getWorkers()) {
-                Task task = (Task) worker.getTaskAssignedTo().toArray()[0];
+                Task task = (Task) worker.getTaskAssignedTo();
                 if (task != null) {
                     task.setDaysLeft(task.getDaysLeft() - 1);
                     if (task.getDaysLeft() <= 0) {
-                        worker.getTaskAssignedTo().remove(task);
+                        worker.setTaskAssignedTo(null);
+                        taskRepository.delete(task);
                         if (task.getType() == TaskType.FISHING) {
                             Item item = itemService.findRandomItemByType(ItemType.FISH);
                             player.getItems().add(item);

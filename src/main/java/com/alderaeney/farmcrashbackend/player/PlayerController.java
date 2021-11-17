@@ -16,6 +16,8 @@ import com.alderaeney.farmcrashbackend.crop.exceptions.CropNotFoundException;
 import com.alderaeney.farmcrashbackend.player.exceptions.CropNotFoundInPlayerException;
 import com.alderaeney.farmcrashbackend.player.exceptions.IndexOutOfBoundsException;
 import com.alderaeney.farmcrashbackend.player.exceptions.NotEnoughMoneyException;
+import com.alderaeney.farmcrashbackend.player.exceptions.NotEnoughMoneyToHireException;
+import com.alderaeney.farmcrashbackend.player.exceptions.NotEnoughMoneyToPerformTaskException;
 import com.alderaeney.farmcrashbackend.player.exceptions.PlayerByUSernameNotFoundException;
 import com.alderaeney.farmcrashbackend.player.exceptions.PlayerNotFoundException;
 import com.alderaeney.farmcrashbackend.player.exceptions.UsernameTakenException;
@@ -24,6 +26,7 @@ import com.alderaeney.farmcrashbackend.player.exceptions.WorkerNotFoundInPlayerE
 import com.alderaeney.farmcrashbackend.task.Task;
 import com.alderaeney.farmcrashbackend.task.TaskService;
 import com.alderaeney.farmcrashbackend.task.exceptions.TaskNotFoundException;
+import com.alderaeney.farmcrashbackend.worker.Hired;
 import com.alderaeney.farmcrashbackend.worker.Worker;
 import com.alderaeney.farmcrashbackend.worker.WorkerService;
 import com.alderaeney.farmcrashbackend.worker.exceptions.WorkerNotFoundException;
@@ -114,9 +117,16 @@ public class PlayerController {
                 Worker worker = play.getWorkers().get(index);
                 Optional<Task> task = taskService.getTaskById(taskId);
                 if (task.isPresent()) {
-                    worker.getTaskAssignedTo().add(task.get());
-                    play.getWorkers().set(index, worker);
-                    return play;
+                    if (play.getMoney().subtract(BigInteger.valueOf(task.get().getCost())).longValue() >= 0) {
+                        Task nTask = new Task(task.get().getType(), task.get().getDaysLeft(), task.get().getCost());
+                        worker.setTaskAssignedTo(nTask);
+                        taskService.insertTask(nTask);
+                        play.getWorkers().set(index, worker);
+                        return play;
+                    } else {
+                        throw new NotEnoughMoneyToPerformTaskException(play.getMoney().intValue(),
+                                task.get().getCost());
+                    }
                 } else
                     throw new TaskNotFoundException(taskId);
             } catch (Exception e) {
@@ -191,7 +201,7 @@ public class PlayerController {
 
     @GetMapping(path = "worker/{workerId}/hire")
     @Transactional
-    public void hireWorker(@PathVariable("workerId") Long workerId) {
+    public Player hireWorker(@PathVariable("workerId") Long workerId) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
         Optional<Player> player = playerService.findPlayerByName(username);
@@ -199,8 +209,16 @@ public class PlayerController {
             Player play = player.get();
             Optional<Worker> worker = workerService.getWorkerById(workerId);
             if (worker.isPresent()) {
-                if (!checkIfWorkerIsAlreadyHired(play.getWorkers(), worker.get().getId())) {
-                    play.getWorkers().add(worker.get());
+                if (!checkIfWorkerIsAlreadyHired(play.getWorkers(), worker.get())) {
+                    Worker aux = worker.get();
+                    if (play.getMoney().subtract(BigInteger.valueOf(aux.getCostOfHiring())).longValue() >= 0) {
+                        Worker nWorker = new Worker(aux.getName(), aux.getAge(), aux.getFilename(), Hired.HIRED, 0);
+                        workerService.insertWorker(nWorker);
+                        play.getWorkers().add(nWorker);
+                        return play;
+                    } else {
+                        throw new NotEnoughMoneyToHireException(play.getMoney().intValue(), aux.getCostOfHiring());
+                    }
                 } else {
                     throw new WorkerAlreadyHiredException(worker.get().getId());
                 }
@@ -235,9 +253,12 @@ public class PlayerController {
         }
     }
 
-    private boolean checkIfWorkerIsAlreadyHired(List<Worker> workers, Long workerId) {
+    private boolean checkIfWorkerIsAlreadyHired(List<Worker> workers, Worker newWorker) {
+        if (newWorker.getHired() == Hired.HIRED) {
+            return true;
+        }
         for (Worker worker : workers) {
-            if (worker.getId().equals(workerId)) {
+            if (worker.getName().equals(newWorker.getName())) {
                 return true;
             }
         }

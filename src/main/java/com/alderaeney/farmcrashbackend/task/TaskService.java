@@ -24,4 +24,8 @@ public class TaskService {
         return repository.findAll();
     }
 
+    public void insertTask(Task task) {
+        repository.save(task);
+    }
+
 }
