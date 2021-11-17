@@ -113,7 +113,7 @@ public class PlayerController {
         Optional<Player> player = playerService.findPlayerByName(username);
         if (player.isPresent()) {
             Player play = player.get();
-            try {
+            if (index >= 0 || index < play.getWorkers().size()) {
                 Worker worker = play.getWorkers().get(index);
                 Optional<Task> task = taskService.getTaskById(taskId);
                 if (task.isPresent()) {
@@ -122,6 +122,7 @@ public class PlayerController {
                         worker.setTaskAssignedTo(nTask);
                         taskService.insertTask(nTask);
                         play.getWorkers().set(index, worker);
+                        play.setMoney(play.getMoney().subtract(BigInteger.valueOf(task.get().getCost())));
                         return play;
                     } else {
                         throw new NotEnoughMoneyToPerformTaskException(play.getMoney().intValue(),
@@ -129,9 +130,9 @@ public class PlayerController {
                     }
                 } else
                     throw new TaskNotFoundException(taskId);
-            } catch (Exception e) {
+            } else
                 throw new WorkerNotFoundInPlayerException(index);
-            }
+
         } else {
             throw new PlayerByUSernameNotFoundException(username);
         }
@@ -215,6 +216,7 @@ public class PlayerController {
                         Worker nWorker = new Worker(aux.getName(), aux.getAge(), aux.getFilename(), Hired.HIRED, 0);
                         workerService.insertWorker(nWorker);
                         play.getWorkers().add(nWorker);
+                        play.setMoney(play.getMoney().subtract(BigInteger.valueOf(aux.getCostOfHiring())));
                         return play;
                     } else {
                         throw new NotEnoughMoneyToHireException(play.getMoney().intValue(), aux.getCostOfHiring());

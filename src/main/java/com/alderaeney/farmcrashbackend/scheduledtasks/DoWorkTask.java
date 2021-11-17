@@ -4,12 +4,14 @@ import com.alderaeney.farmcrashbackend.player.PlayerService;
 import com.alderaeney.farmcrashbackend.task.TaskType;
 import com.alderaeney.farmcrashbackend.worker.Worker;
 
+import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-import java.util.Optional;
 
 import com.alderaeney.farmcrashbackend.item.Item;
 import com.alderaeney.farmcrashbackend.item.ItemService;
@@ -33,10 +35,12 @@ public class DoWorkTask {
     }
 
     @Scheduled(fixedRate = 10000)
-    private void performTasks() {
+    @Transactional
+    public void performTasks() {
         List<Player> players = playerService.getAllPlayers();
 
         for (Player player : players) {
+            Hibernate.initialize(player.getWorkers());
             for (Worker worker : player.getWorkers()) {
                 Task task = (Task) worker.getTaskAssignedTo();
                 if (task != null) {
