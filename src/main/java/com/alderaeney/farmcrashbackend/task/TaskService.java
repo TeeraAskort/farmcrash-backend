@@ -21,7 +21,7 @@ public class TaskService {
     }
 
     public List<Task> getAllTasks() {
-        return repository.findAll();
+        return repository.findAllByAssigned(false);
     }
 
     public void insertTask(Task task) {

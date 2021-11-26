@@ -27,4 +27,6 @@ public class Task {
     private Integer daysLeft;
     @NonNull
     private Integer cost;
+    @NonNull
+    private Boolean assigned;
 }

@@ -21,7 +21,7 @@ import lombok.Setter;
 @RequiredArgsConstructor
 @Getter
 @Setter
-public class Item implements Cloneable {
+public class Item {
     @Id
     @SequenceGenerator(name = "item_sequence", sequenceName = "item_sequence", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "item_sequence")
@@ -32,11 +32,12 @@ public class Item implements Cloneable {
     private ItemType type;
     @NonNull
     private Integer sellPrice;
-    @NonNull
+    @Transient
     private String imageUrl;
+    @NonNull
+    private String filename;
 
-    @Override
-    protected Object clone() throws CloneNotSupportedException {
-        return super.clone();
+    public String getImageUrl() {
+        return "/items/" + this.type.toString() + "/" + this.filename + ".png";
     }
 }

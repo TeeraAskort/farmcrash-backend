@@ -118,7 +118,8 @@ public class PlayerController {
                 Optional<Task> task = taskService.getTaskById(taskId);
                 if (task.isPresent()) {
                     if (play.getMoney().subtract(BigInteger.valueOf(task.get().getCost())).longValue() >= 0) {
-                        Task nTask = new Task(task.get().getType(), task.get().getDaysLeft(), task.get().getCost());
+                        Task nTask = new Task(task.get().getType(), task.get().getDaysLeft(), task.get().getCost(),
+                                true);
                         worker.setTaskAssignedTo(nTask);
                         taskService.insertTask(nTask);
                         play.getWorkers().set(index, worker);

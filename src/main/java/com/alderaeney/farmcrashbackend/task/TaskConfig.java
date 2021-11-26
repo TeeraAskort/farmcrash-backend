@@ -12,7 +12,7 @@ public class TaskConfig {
     @Bean
     CommandLineRunner taskConfiguration(TaskRepository repository) {
         return args -> {
-            Task fishing = new Task(TaskType.FISHING, 3, 100);
+            Task fishing = new Task(TaskType.FISHING, 3, 100, false);
             repository.saveAll(List.of(fishing));
         };
     }
