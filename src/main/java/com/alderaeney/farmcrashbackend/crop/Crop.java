@@ -1,11 +1,6 @@
 package com.alderaeney.farmcrashbackend.crop;
 
-import java.util.Set;
-
 import javax.persistence.*;
-
-import com.alderaeney.farmcrashbackend.player.Player;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

@@ -13,13 +13,14 @@ import com.alderaeney.farmcrashbackend.crop.CropService;
 import com.alderaeney.farmcrashbackend.crop.CropStage;
 import com.alderaeney.farmcrashbackend.crop.exceptions.CropNotFarmeableException;
 import com.alderaeney.farmcrashbackend.crop.exceptions.CropNotFoundException;
+import com.alderaeney.farmcrashbackend.item.Item;
+import com.alderaeney.farmcrashbackend.item.ItemService;
 import com.alderaeney.farmcrashbackend.player.exceptions.CropNotFoundInPlayerException;
 import com.alderaeney.farmcrashbackend.player.exceptions.IndexOutOfBoundsException;
 import com.alderaeney.farmcrashbackend.player.exceptions.NotEnoughMoneyException;
 import com.alderaeney.farmcrashbackend.player.exceptions.NotEnoughMoneyToHireException;
 import com.alderaeney.farmcrashbackend.player.exceptions.NotEnoughMoneyToPerformTaskException;
 import com.alderaeney.farmcrashbackend.player.exceptions.PlayerByUSernameNotFoundException;
-import com.alderaeney.farmcrashbackend.player.exceptions.PlayerNotFoundException;
 import com.alderaeney.farmcrashbackend.player.exceptions.UsernameTakenException;
 import com.alderaeney.farmcrashbackend.player.exceptions.WorkerAlreadyHiredException;
 import com.alderaeney.farmcrashbackend.player.exceptions.WorkerNotFoundInPlayerException;
@@ -53,15 +54,17 @@ public class PlayerController {
     private final TaskService taskService;
     private final CropService cropService;
     private final WorkerService workerService;
+    private final ItemService itemService;
     private final PasswordEncoder passwordEncoder;
 
     @Autowired
     public PlayerController(PlayerService playerService, TaskService taskService, CropService cropService,
-            WorkerService workerService, PasswordEncoder passwordEncoder) {
+            WorkerService workerService, ItemService itemService, PasswordEncoder passwordEncoder) {
         this.playerService = playerService;
         this.taskService = taskService;
         this.cropService = cropService;
         this.workerService = workerService;
+        this.itemService = itemService;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -247,6 +250,29 @@ public class PlayerController {
                 play.setMoney(play.getMoney().add(BigInteger.valueOf(price)));
                 play.getCrops().remove(crop);
                 cropService.removeCrop(crop.getId());
+                return play;
+            } else {
+                throw new IndexOutOfBoundsException(index);
+            }
+        } else {
+            throw new PlayerByUSernameNotFoundException(username);
+        }
+    }
+
+    @GetMapping(path = "item/{index}/sell")
+    @Transactional
+    public Player sellItem(@PathVariable("index") Integer index) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+        Optional<Player> player = playerService.findPlayerByName(username);
+        if (player.isPresent()) {
+            Player play = player.get();
+            if (index >= 0 && index < play.getItems().size()) {
+                Item item = play.getItems().get(index);
+                Integer price = item.getSellPrice();
+                play.setMoney(play.getMoney().add(BigInteger.valueOf(price)));
+                play.getItems().remove(item);
+                itemService.removeItem(item.getId());
                 return play;
             } else {
                 throw new IndexOutOfBoundsException(index);

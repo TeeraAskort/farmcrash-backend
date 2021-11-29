@@ -1,12 +1,8 @@
 package com.alderaeney.farmcrashbackend.worker;
 
-import java.util.Set;
-
 import javax.persistence.*;
 
-import com.alderaeney.farmcrashbackend.player.Player;
 import com.alderaeney.farmcrashbackend.task.Task;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -22,7 +18,7 @@ import lombok.Setter;
 @RequiredArgsConstructor
 @Getter
 @Setter
-public class Worker implements Cloneable {
+public class Worker {
     @Id
     @SequenceGenerator(name = "worker_sequence", sequenceName = "worker_sequence", allocationSize = 1)
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "worker_sequence")
@@ -45,10 +41,5 @@ public class Worker implements Cloneable {
 
     public String getImageUrl() {
         return "/worker/" + this.filename + ".png";
-    }
-
-    @Override
-    protected Object clone() throws CloneNotSupportedException {
-        return super.clone();
     }
 }

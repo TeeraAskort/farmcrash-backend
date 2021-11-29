@@ -11,9 +11,6 @@ import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
-import javax.persistence.JoinColumn;
-import javax.persistence.JoinTable;
-import javax.persistence.ManyToMany;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 
@@ -27,6 +24,7 @@ import lombok.Setter;
 import com.alderaeney.farmcrashbackend.crop.Crop;
 import com.alderaeney.farmcrashbackend.item.Item;
 import com.alderaeney.farmcrashbackend.worker.Worker;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -59,6 +57,7 @@ public class Player implements UserDetails {
     @NonNull
     private LocalDate lastTimePlayed;
     @NonNull
+    @JsonIgnore
     private String password;
     @ElementCollection(targetClass = GrantedAuthority.class, fetch = FetchType.EAGER)
     private List<GrantedAuthority> authorities = new ArrayList<>();

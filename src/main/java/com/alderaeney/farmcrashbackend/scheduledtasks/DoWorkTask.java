@@ -8,7 +8,6 @@ import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -42,7 +41,7 @@ public class DoWorkTask {
         for (Player player : players) {
             Hibernate.initialize(player.getWorkers());
             for (Worker worker : player.getWorkers()) {
-                Task task = (Task) worker.getTaskAssignedTo();
+                Task task = worker.getTaskAssignedTo();
                 if (task != null) {
                     task.setDaysLeft(task.getDaysLeft() - 1);
                     if (task.getDaysLeft() <= 0) {
@@ -50,7 +49,10 @@ public class DoWorkTask {
                         taskRepository.delete(task);
                         if (task.getType() == TaskType.FISHING) {
                             Item item = itemService.findRandomItemByType(ItemType.FISH);
-                            player.getItems().add(item);
+                            Item itemToAdd = new Item(item.getName(), item.getType(), item.getSellPrice(),
+                                    item.getFilename(), true);
+                            itemService.saveItem(itemToAdd);
+                            player.getItems().add(itemToAdd);
                         }
                     }
                 }

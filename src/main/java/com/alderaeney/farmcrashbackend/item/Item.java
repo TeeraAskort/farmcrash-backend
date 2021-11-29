@@ -1,11 +1,6 @@
 package com.alderaeney.farmcrashbackend.item;
 
-import java.util.Set;
-
 import javax.persistence.*;
-
-import com.alderaeney.farmcrashbackend.player.Player;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;
@@ -36,6 +31,8 @@ public class Item {
     private String imageUrl;
     @NonNull
     private String filename;
+    @NonNull
+    private Boolean isAssigned;
 
     public String getImageUrl() {
         return "/items/" + this.type.toString() + "/" + this.filename + ".png";
