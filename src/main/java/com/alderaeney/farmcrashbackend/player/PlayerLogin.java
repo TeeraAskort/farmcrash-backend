@@ -6,4 +6,5 @@ import lombok.Data;
 public class PlayerLogin {
     private String name;
     private String password;
+    private String passwordRepeat;
 }

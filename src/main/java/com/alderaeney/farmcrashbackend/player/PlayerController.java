@@ -20,6 +20,7 @@ import com.alderaeney.farmcrashbackend.player.exceptions.IndexOutOfBoundsExcepti
 import com.alderaeney.farmcrashbackend.player.exceptions.NotEnoughMoneyException;
 import com.alderaeney.farmcrashbackend.player.exceptions.NotEnoughMoneyToHireException;
 import com.alderaeney.farmcrashbackend.player.exceptions.NotEnoughMoneyToPerformTaskException;
+import com.alderaeney.farmcrashbackend.player.exceptions.PasswordsDoNotMatchException;
 import com.alderaeney.farmcrashbackend.player.exceptions.PlayerByUSernameNotFoundException;
 import com.alderaeney.farmcrashbackend.player.exceptions.UsernameTakenException;
 import com.alderaeney.farmcrashbackend.player.exceptions.WorkerAlreadyHiredException;
@@ -86,25 +87,28 @@ public class PlayerController {
     }
 
     @PostMapping(path = "create")
-    public Player createPlayer(@RequestBody PlayerLogin userData) throws CloneNotSupportedException {
+    public Player createPlayer(@RequestBody PlayerLogin userData) {
         Optional<Player> playerByName = playerService.findPlayerByName(userData.getName());
         if (playerByName.isPresent()) {
             throw new UsernameTakenException(userData.getName());
         } else {
-            Optional<Crop> crop = cropService.getCropById(1L);
-            if (crop.isPresent()) {
-                ArrayList<Crop> crops = new ArrayList<>();
-                Crop aux = new Crop(CropStage.DAY0, crop.get().getName(), crop.get().getSellPrice(),
-                        crop.get().getBuyPrice(), crop.get().getType(), 20, crop.get().getFileName());
+            if (userData.getPassword().equals(userData.getPasswordRepeat())) {
+                Optional<Crop> crop = cropService.getCropById(1L);
+                if (crop.isPresent()) {
+                    ArrayList<Crop> crops = new ArrayList<>();
+                    Crop aux = new Crop(CropStage.DAY0, crop.get().getName(), crop.get().getSellPrice(),
+                            crop.get().getBuyPrice(), crop.get().getType(), 20, crop.get().getFileName());
 
-                cropService.addCrop(aux);
-                crops.add(aux);
-                Player player = new Player(userData.getName(), crops, new ArrayList<>(), new ArrayList<>(),
-                        BigInteger.valueOf(1000L), LocalDate.now(), passwordEncoder.encode(userData.getPassword()));
-                player.setAuthorities(List.of(new SimpleGrantedAuthority("PLAYER")));
-                return playerService.addPlayer(player);
+                    cropService.addCrop(aux);
+                    crops.add(aux);
+                    Player player = new Player(userData.getName(), crops, new ArrayList<>(), new ArrayList<>(),
+                            BigInteger.valueOf(1000L), LocalDate.now(), passwordEncoder.encode(userData.getPassword()));
+                    player.setAuthorities(List.of(new SimpleGrantedAuthority("PLAYER")));
+                    return playerService.addPlayer(player);
+                } else
+                    return null;
             } else
-                return null;
+                throw new PasswordsDoNotMatchException();
         }
     }
 

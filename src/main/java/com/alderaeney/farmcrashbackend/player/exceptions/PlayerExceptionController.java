@@ -62,4 +62,9 @@ public class PlayerExceptionController {
         return new ResponseEntity<>("Not enough money to perform task<br>Available money: " + exception.money
                 + "<br>Cost: " + exception.cost, HttpStatus.BAD_REQUEST);
     }
+
+    @ExceptionHandler(value = PasswordsDoNotMatchException.class)
+    public ResponseEntity<Object> passwordsDoNotMatchException(PasswordsDoNotMatchException exception) {
+        return new ResponseEntity<>(exception.msg, HttpStatus.BAD_REQUEST);
+    }
 }
