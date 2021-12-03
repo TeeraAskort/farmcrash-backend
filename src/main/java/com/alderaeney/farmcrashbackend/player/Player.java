@@ -5,12 +5,14 @@ import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.persistence.CascadeType;
 import javax.persistence.ElementCollection;
 import javax.persistence.Entity;
 import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.OneToOne;
 import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 
@@ -23,6 +25,7 @@ import lombok.Setter;
 
 import com.alderaeney.farmcrashbackend.crop.Crop;
 import com.alderaeney.farmcrashbackend.item.Item;
+import com.alderaeney.farmcrashbackend.stats.Stats;
 import com.alderaeney.farmcrashbackend.worker.Worker;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
@@ -61,6 +64,11 @@ public class Player implements UserDetails {
     private String password;
     @ElementCollection(targetClass = GrantedAuthority.class, fetch = FetchType.EAGER)
     private List<GrantedAuthority> authorities = new ArrayList<>();
+
+    @JsonIgnore
+    @NonNull
+    @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "player")
+    private Stats stats;
 
     @Override
     public String getUsername() {

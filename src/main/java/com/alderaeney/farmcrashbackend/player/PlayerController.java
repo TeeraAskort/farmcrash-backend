@@ -2,6 +2,7 @@ package com.alderaeney.farmcrashbackend.player;
 
 import java.math.BigInteger;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
@@ -25,6 +26,9 @@ import com.alderaeney.farmcrashbackend.player.exceptions.PlayerByUSernameNotFoun
 import com.alderaeney.farmcrashbackend.player.exceptions.UsernameTakenException;
 import com.alderaeney.farmcrashbackend.player.exceptions.WorkerAlreadyHiredException;
 import com.alderaeney.farmcrashbackend.player.exceptions.WorkerNotFoundInPlayerException;
+import com.alderaeney.farmcrashbackend.stats.DataSet;
+import com.alderaeney.farmcrashbackend.stats.Stats;
+import com.alderaeney.farmcrashbackend.stats.StatsService;
 import com.alderaeney.farmcrashbackend.task.Task;
 import com.alderaeney.farmcrashbackend.task.TaskService;
 import com.alderaeney.farmcrashbackend.task.exceptions.TaskNotFoundException;
@@ -56,16 +60,19 @@ public class PlayerController {
     private final CropService cropService;
     private final WorkerService workerService;
     private final ItemService itemService;
+    private final StatsService statsService;
     private final PasswordEncoder passwordEncoder;
 
     @Autowired
     public PlayerController(PlayerService playerService, TaskService taskService, CropService cropService,
-            WorkerService workerService, ItemService itemService, PasswordEncoder passwordEncoder) {
+            WorkerService workerService, ItemService itemService, StatsService statsService,
+            PasswordEncoder passwordEncoder) {
         this.playerService = playerService;
         this.taskService = taskService;
         this.cropService = cropService;
         this.workerService = workerService;
         this.itemService = itemService;
+        this.statsService = statsService;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -101,8 +108,14 @@ public class PlayerController {
 
                     cropService.addCrop(aux);
                     crops.add(aux);
+                    Stats stats = new Stats(new ArrayList<>(List.of(formatDate(LocalDate.now()))),
+                            List.of(new DataSet("Money over time", new ArrayList<>(List.of(1000)),
+                                    false, "rgb(221, 16, 16)", 0.1F)));
+                    statsService.saveStats(stats);
                     Player player = new Player(userData.getName(), crops, new ArrayList<>(), new ArrayList<>(),
-                            BigInteger.valueOf(1000L), LocalDate.now(), passwordEncoder.encode(userData.getPassword()));
+                            BigInteger.valueOf(1000L), LocalDate.now(), passwordEncoder.encode(userData.getPassword()),
+                            stats);
+                    stats.setPlayer(player);
                     player.setAuthorities(List.of(new SimpleGrantedAuthority("PLAYER")));
                     return playerService.addPlayer(player);
                 } else
@@ -131,6 +144,8 @@ public class PlayerController {
                         taskService.insertTask(nTask);
                         play.getWorkers().set(index, worker);
                         play.setMoney(play.getMoney().subtract(BigInteger.valueOf(task.get().getCost())));
+                        Stats stats = updateStats(play.getStats(), play.getMoney().intValue());
+                        play.setStats(stats);
                         return play;
                     } else {
                         throw new NotEnoughMoneyToPerformTaskException(play.getMoney().intValue(),
@@ -196,6 +211,8 @@ public class PlayerController {
                             crop.get().getBuyPrice(), crop.get().getType(), amount, crop.get().getFileName());
                     cropService.addCrop(cropToAdd);
                     play.getCrops().add(cropToAdd);
+                    Stats stats = updateStats(play.getStats(), play.getMoney().intValue());
+                    play.setStats(stats);
                     return play;
                 } else {
                     throw new NotEnoughMoneyException(price, player.get().getMoney());
@@ -225,6 +242,8 @@ public class PlayerController {
                         workerService.insertWorker(nWorker);
                         play.getWorkers().add(nWorker);
                         play.setMoney(play.getMoney().subtract(BigInteger.valueOf(aux.getCostOfHiring())));
+                        Stats stats = updateStats(play.getStats(), play.getMoney().intValue());
+                        play.setStats(stats);
                         return play;
                     } else {
                         throw new NotEnoughMoneyToHireException(play.getMoney().intValue(), aux.getCostOfHiring());
@@ -254,6 +273,8 @@ public class PlayerController {
                 play.setMoney(play.getMoney().add(BigInteger.valueOf(price)));
                 play.getCrops().remove(crop);
                 cropService.removeCrop(crop.getId());
+                Stats stats = updateStats(play.getStats(), play.getMoney().intValue());
+                play.setStats(stats);
                 return play;
             } else {
                 throw new IndexOutOfBoundsException(index);
@@ -277,10 +298,24 @@ public class PlayerController {
                 play.setMoney(play.getMoney().add(BigInteger.valueOf(price)));
                 play.getItems().remove(item);
                 itemService.removeItem(item.getId());
+                Stats stats = updateStats(play.getStats(), play.getMoney().intValue());
+                play.setStats(stats);
                 return play;
             } else {
                 throw new IndexOutOfBoundsException(index);
             }
+        } else {
+            throw new PlayerByUSernameNotFoundException(username);
+        }
+    }
+
+    @GetMapping(path = "stats")
+    public Stats getStats() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+        Optional<Player> player = playerService.findPlayerByName(username);
+        if (player.isPresent()) {
+            return player.get().getStats();
         } else {
             throw new PlayerByUSernameNotFoundException(username);
         }
@@ -306,5 +341,23 @@ public class PlayerController {
             }
         }
         return -1;
+    }
+
+    private String formatDate(LocalDate date) {
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd/MM/yyyy");
+        return date.format(formatter);
+    }
+
+    private Stats updateStats(Stats stats, Integer money) {
+        String date = formatDate(LocalDate.now());
+        Integer index = stats.getLabels().indexOf(date);
+        if (index == -1) {
+            stats.getLabels().add(date);
+            stats.getDatasets().get(0).getData().add(money);
+        } else {
+            stats.getDatasets().get(0).getData().set(index, money);
+        }
+
+        return stats;
     }
 }
