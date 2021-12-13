@@ -95,38 +95,73 @@ public class PlayerController {
 
     @PostMapping(path = "create")
     public Player createPlayer(@RequestBody PlayerLogin userData) {
-        Optional<Player> playerByName = playerService.findPlayerByName(userData.getName());
-        if (playerByName.isPresent()) {
-            throw new UsernameTakenException(userData.getName());
-        } else {
-            if (userData.getPassword().equals(userData.getPasswordRepeat())) {
-                Optional<Crop> crop = cropService.getCropById(1L);
-                if (crop.isPresent()) {
-                    ArrayList<Crop> crops = new ArrayList<>();
-                    Crop aux = new Crop(CropStage.DAY0, crop.get().getName(), crop.get().getSellPrice(),
-                            crop.get().getBuyPrice(), crop.get().getType(), 20, crop.get().getFileName());
+        if (userData.getName().equals("prova")) {
+            Optional<Player> playerByName = playerService.findPlayerByName(userData.getName());
+            if (playerByName.isPresent()) {
+                throw new UsernameTakenException(userData.getName());
+            } else {
+                if (userData.getPassword().equals(userData.getPasswordRepeat())) {
+                    Optional<Crop> crop = cropService.getCropById(1L);
+                    if (crop.isPresent()) {
+                        ArrayList<Crop> crops = new ArrayList<>();
+                        Crop aux = new Crop(CropStage.DAY0, crop.get().getName(), crop.get().getSellPrice(),
+                                crop.get().getBuyPrice(), crop.get().getType(), 20, crop.get().getFileName());
 
-                    cropService.addCrop(aux);
-                    crops.add(aux);
-                    Stats stats = new Stats(new ArrayList<>(List.of(formatDate(LocalDate.now()))),
-                            List.of(new DataSet("Money over time", new ArrayList<>(List.of(1000)),
-                                    false, "rgb(221, 16, 16)", 0.1F)));
-                    statsService.saveStats(stats);
-                    Player player = new Player(userData.getName(), crops, new ArrayList<>(), new ArrayList<>(),
-                            BigInteger.valueOf(1000L), LocalDate.now(), passwordEncoder.encode(userData.getPassword()),
-                            stats);
-                    stats.setPlayer(player);
-                    player.setAuthorities(List.of(new SimpleGrantedAuthority("PLAYER")));
-                    return playerService.addPlayer(player);
+                        cropService.addCrop(aux);
+                        crops.add(aux);
+                        Stats stats = new Stats(
+                                new ArrayList<>(
+                                        List.of("09/12/2021", "10/12/2021", "11/12/2021", "12/12/2021", "13/12/2021")),
+                                List.of(new DataSet("Money over time",
+                                        new ArrayList<>(List.of(1000, 3000, 1250, 2200, 1500)),
+                                        false, "rgb(221, 16, 16)", 0.1F)));
+                        statsService.saveStats(stats);
+                        Player player = new Player(userData.getName(), crops, new ArrayList<>(), new ArrayList<>(),
+                                BigInteger.valueOf(1000L), LocalDate.now(),
+                                passwordEncoder.encode(userData.getPassword()),
+                                stats);
+                        stats.setPlayer(player);
+                        player.setAuthorities(List.of(new SimpleGrantedAuthority("PLAYER")));
+                        return playerService.addPlayer(player);
+                    } else
+                        return null;
                 } else
-                    return null;
-            } else
-                throw new PasswordsDoNotMatchException();
+                    throw new PasswordsDoNotMatchException();
+            }
+        } else {
+            Optional<Player> playerByName = playerService.findPlayerByName(userData.getName());
+            if (playerByName.isPresent()) {
+                throw new UsernameTakenException(userData.getName());
+            } else {
+                if (userData.getPassword().equals(userData.getPasswordRepeat())) {
+                    Optional<Crop> crop = cropService.getCropById(1L);
+                    if (crop.isPresent()) {
+                        ArrayList<Crop> crops = new ArrayList<>();
+                        Crop aux = new Crop(CropStage.DAY0, crop.get().getName(), crop.get().getSellPrice(),
+                                crop.get().getBuyPrice(), crop.get().getType(), 20, crop.get().getFileName());
+
+                        cropService.addCrop(aux);
+                        crops.add(aux);
+                        Stats stats = new Stats(new ArrayList<>(List.of(formatDate(LocalDate.now()))),
+                                List.of(new DataSet("Money over time", new ArrayList<>(List.of(1000)),
+                                        false, "rgb(221, 16, 16)", 0.1F)));
+                        statsService.saveStats(stats);
+                        Player player = new Player(userData.getName(), crops, new ArrayList<>(), new ArrayList<>(),
+                                BigInteger.valueOf(1000L), LocalDate.now(),
+                                passwordEncoder.encode(userData.getPassword()),
+                                stats);
+                        stats.setPlayer(player);
+                        player.setAuthorities(List.of(new SimpleGrantedAuthority("PLAYER")));
+                        return playerService.addPlayer(player);
+                    } else
+                        return null;
+                } else
+                    throw new PasswordsDoNotMatchException();
+            }
         }
     }
 
     @GetMapping(path = "worker/{index}/assignTask/{taskId}")
-    @Transactional
     public Player assignTaskToWorker(@PathVariable("index") Integer index, @PathVariable("taskId") Long taskId) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
