@@ -5,13 +5,18 @@ plugins {
 }
 
 group = 'com.alderaeney'
-version = '0.0.1-SNAPSHOT'
+version = '1.0'
 sourceCompatibility = '11'
 
 configurations {
 	compileOnly {
 		extendsFrom annotationProcessor
 	}
+}
+
+bootJar {
+	baseName = "Farmcrash"
+	version = "1.0"
 }
 
 repositories {
