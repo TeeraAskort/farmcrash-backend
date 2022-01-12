@@ -15,8 +15,8 @@ public class PlayerExceptionController {
 
     @ExceptionHandler(value = NotEnoughMoneyException.class)
     public ResponseEntity<Object> notEnoughMoneyException(NotEnoughMoneyException exception) {
-        return new ResponseEntity<>("Not enough money to buy the crops<br>Available money: " + exception.availableMoney
-                + "<br>Price to buy the crops: " + exception.price, HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>("Not enough money to buy the crops, available money: " + exception.availableMoney
+                + ", price to buy the crops: " + exception.price, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(value = UsernameTakenException.class)
