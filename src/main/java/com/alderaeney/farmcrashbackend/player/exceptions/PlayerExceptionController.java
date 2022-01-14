@@ -53,18 +53,33 @@ public class PlayerExceptionController {
 
     @ExceptionHandler(value = NotEnoughMoneyToHireException.class)
     public ResponseEntity<Object> notEnoughMoneyToHireException(NotEnoughMoneyToHireException exception) {
-        return new ResponseEntity<>("Not enough money to hire worker<br>Available money: " + exception.money
-                + "<br>Cost: " + exception.cost, HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>("Not enough money to hire worker, available money: " + exception.money
+                + ", cost: " + exception.cost, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(value = NotEnoughMoneyToPerformTaskException.class)
     public ResponseEntity<Object> notEnoughMoneyToPerformTaskException(NotEnoughMoneyToPerformTaskException exception) {
-        return new ResponseEntity<>("Not enough money to perform task<br>Available money: " + exception.money
-                + "<br>Cost: " + exception.cost, HttpStatus.BAD_REQUEST);
+        return new ResponseEntity<>("Not enough money to perform task, available money: " + exception.money
+                + ", cost: " + exception.cost, HttpStatus.BAD_REQUEST);
     }
 
     @ExceptionHandler(value = PasswordsDoNotMatchException.class)
     public ResponseEntity<Object> passwordsDoNotMatchException(PasswordsDoNotMatchException exception) {
         return new ResponseEntity<>(exception.msg, HttpStatus.BAD_REQUEST);
+    }
+
+    @ExceptionHandler(value = CannotStoreImageException.class)
+    public ResponseEntity<Object> cannotStoreImageException(CannotStoreImageException exception) {
+        return new ResponseEntity<>(exception.msg, HttpStatus.INTERNAL_SERVER_ERROR);
+    }
+
+    @ExceptionHandler(value = ImageTooBigException.class)
+    public ResponseEntity<Object> imageTooBigException(ImageTooBigException exception) {
+        return new ResponseEntity<>(exception.msg, HttpStatus.NOT_ACCEPTABLE);
+    }
+
+    @ExceptionHandler(value = ImageTypeNotSupported.class)
+    public ResponseEntity<Object> imageTypeNotSupportedException(ImageTypeNotSupported exception) {
+        return new ResponseEntity<>(exception.msg, HttpStatus.NOT_ACCEPTABLE);
     }
 }

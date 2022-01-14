@@ -1,9 +1,15 @@
 package com.alderaeney.farmcrashbackend.player;
 
+import java.io.IOException;
 import java.math.BigInteger;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -16,7 +22,10 @@ import com.alderaeney.farmcrashbackend.crop.exceptions.CropNotFarmeableException
 import com.alderaeney.farmcrashbackend.crop.exceptions.CropNotFoundException;
 import com.alderaeney.farmcrashbackend.item.Item;
 import com.alderaeney.farmcrashbackend.item.ItemService;
+import com.alderaeney.farmcrashbackend.player.exceptions.CannotStoreImageException;
 import com.alderaeney.farmcrashbackend.player.exceptions.CropNotFoundInPlayerException;
+import com.alderaeney.farmcrashbackend.player.exceptions.ImageTooBigException;
+import com.alderaeney.farmcrashbackend.player.exceptions.ImageTypeNotSupported;
 import com.alderaeney.farmcrashbackend.player.exceptions.IndexOutOfBoundsException;
 import com.alderaeney.farmcrashbackend.player.exceptions.NotEnoughMoneyException;
 import com.alderaeney.farmcrashbackend.player.exceptions.NotEnoughMoneyToHireException;
@@ -37,6 +46,7 @@ import com.alderaeney.farmcrashbackend.worker.Worker;
 import com.alderaeney.farmcrashbackend.worker.WorkerService;
 import com.alderaeney.farmcrashbackend.worker.exceptions.WorkerNotFoundException;
 
+import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -47,7 +57,10 @@ import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.multipart.MultipartFile;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -62,6 +75,13 @@ public class PlayerController {
     private final ItemService itemService;
     private final StatsService statsService;
     private final PasswordEncoder passwordEncoder;
+
+    private final String IMAGESPATH = "userImages/";
+
+    private static final List<String> ALLOWEDIMAGETYPES = Arrays.asList("image/png", "image/jpg", "image/jpeg",
+            "image/gif");
+
+    private final Integer MAXIMAGESIZE = 1048576;
 
     @Autowired
     public PlayerController(PlayerService playerService, TaskService taskService, CropService cropService,
@@ -117,7 +137,7 @@ public class PlayerController {
                                         false, "rgb(221, 16, 16)", 0.1F)));
                         statsService.saveStats(stats);
                         Player player = new Player(userData.getName(), crops, new ArrayList<>(), new ArrayList<>(),
-                                BigInteger.valueOf(1000L), LocalDate.now(),
+                                BigInteger.valueOf(1000L), LocalDate.now(), "playerImage/avatar.png",
                                 passwordEncoder.encode(userData.getPassword()),
                                 stats);
                         stats.setPlayer(player);
@@ -147,7 +167,7 @@ public class PlayerController {
                                         false, "rgb(221, 16, 16)", 0.1F)));
                         statsService.saveStats(stats);
                         Player player = new Player(userData.getName(), crops, new ArrayList<>(), new ArrayList<>(),
-                                BigInteger.valueOf(1000L), LocalDate.now(),
+                                BigInteger.valueOf(1000L), LocalDate.now(), "playerImage/avatar.png",
                                 passwordEncoder.encode(userData.getPassword()),
                                 stats);
                         stats.setPlayer(player);
@@ -351,6 +371,46 @@ public class PlayerController {
         Optional<Player> player = playerService.findPlayerByName(username);
         if (player.isPresent()) {
             return player.get().getStats();
+        } else {
+            throw new PlayerByUSernameNotFoundException(username);
+        }
+    }
+
+    @PostMapping(path = "uploadImage")
+    @Transactional
+    public Player uploadUserImage(@RequestParam("image") MultipartFile image) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+        Optional<Player> player = playerService.findPlayerByName(username);
+
+        Boolean found = false;
+        for (String type : ALLOWEDIMAGETYPES) {
+            if (type.equals(image.getContentType())) {
+                found = true;
+            }
+        }
+        if (found) {
+            throw new ImageTypeNotSupported();
+        }
+
+        if (image.getSize() > MAXIMAGESIZE) {
+            throw new ImageTooBigException();
+        }
+
+        if (player.isPresent()) {
+            Player play = player.get();
+            String extension = FilenameUtils.getExtension(image.getOriginalFilename());
+            String fileName = username + "." + extension;
+            Path path = Paths.get(IMAGESPATH + fileName);
+            try {
+                Files.copy(image.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
+                String storedPath = ServletUriComponentsBuilder.fromCurrentContextPath().path(IMAGESPATH).path(fileName)
+                        .toUriString();
+                play.setImage(storedPath);
+                return play;
+            } catch (IOException e) {
+                throw new CannotStoreImageException();
+            }
         } else {
             throw new PlayerByUSernameNotFoundException(username);
         }

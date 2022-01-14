@@ -60,6 +60,8 @@ public class Player implements UserDetails {
     @NonNull
     private LocalDate lastTimePlayed;
     @NonNull
+    private String image;
+    @NonNull
     @JsonIgnore
     private String password;
     @ElementCollection(targetClass = GrantedAuthority.class, fetch = FetchType.EAGER)

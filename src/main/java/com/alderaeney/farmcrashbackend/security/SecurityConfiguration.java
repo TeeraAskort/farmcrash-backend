@@ -31,7 +31,8 @@ public class SecurityConfiguration extends WebSecurityConfigurerAdapter {
         http.cors().and().csrf().disable();
         http.authorizeRequests().antMatchers(HttpMethod.POST, "/api/v1/player/create/**").permitAll()
                 .antMatchers(HttpMethod.GET, "/api/v1/player/login").permitAll().antMatchers(HttpMethod.GET, "/crop/**")
-                .permitAll().antMatchers(HttpMethod.GET, "/fish/**").permitAll()
+                .permitAll().antMatchers(HttpMethod.GET, "/items/**").permitAll()
+                .antMatchers(HttpMethod.GET, "/playerImage/**").permitAll()
                 .antMatchers(HttpMethod.GET, "/worker/**").permitAll().anyRequest().authenticated();
     }
 
