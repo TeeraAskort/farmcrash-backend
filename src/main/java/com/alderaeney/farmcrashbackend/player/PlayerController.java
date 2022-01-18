@@ -1,5 +1,6 @@
 package com.alderaeney.farmcrashbackend.player;
 
+import java.io.File;
 import java.io.IOException;
 import java.math.BigInteger;
 import java.nio.file.Files;
@@ -48,6 +49,7 @@ import com.alderaeney.farmcrashbackend.worker.exceptions.WorkerNotFoundException
 
 import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -78,7 +80,7 @@ public class PlayerController {
 
     private final String IMAGESPATH = "userImages/";
 
-    private static final List<String> ALLOWEDIMAGETYPES = Arrays.asList("image/png", "image/jpg", "image/jpeg",
+    private final List<String> ALLOWEDIMAGETYPES = List.of("image/png", "image/jpg", "image/jpeg",
             "image/gif");
 
     private final Integer MAXIMAGESIZE = 1048576;
@@ -376,25 +378,35 @@ public class PlayerController {
         }
     }
 
-    @PostMapping(path = "uploadImage")
+    @PostMapping(path = "uploadImage", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Transactional
-    public Player uploadUserImage(@RequestParam("image") MultipartFile image) {
+    public Player uploadUserImage(@RequestParam("file") MultipartFile image) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
         Optional<Player> player = playerService.findPlayerByName(username);
 
-        Boolean found = false;
-        for (String type : ALLOWEDIMAGETYPES) {
-            if (type.equals(image.getContentType())) {
-                found = true;
+        boolean found = false;
+        try {
+            for (String type : ALLOWEDIMAGETYPES) {
+                if (image.getContentType().equals(type)) {
+                    found = true;
+                }
             }
+        } catch (NullPointerException e) {
+            throw new ImageTypeNotSupported();
         }
-        if (found) {
+        if (!found) {
             throw new ImageTypeNotSupported();
         }
 
         if (image.getSize() > MAXIMAGESIZE) {
             throw new ImageTooBigException();
+        }
+
+        File storageFolder = new File(IMAGESPATH);
+
+        if (!storageFolder.exists()) {
+            storageFolder.mkdir();
         }
 
         if (player.isPresent()) {
@@ -404,9 +416,7 @@ public class PlayerController {
             Path path = Paths.get(IMAGESPATH + fileName);
             try {
                 Files.copy(image.getInputStream(), path, StandardCopyOption.REPLACE_EXISTING);
-                String storedPath = ServletUriComponentsBuilder.fromCurrentContextPath().path(IMAGESPATH).path(fileName)
-                        .toUriString();
-                play.setImage(storedPath);
+                play.setImage(IMAGESPATH + fileName);
                 return play;
             } catch (IOException e) {
                 throw new CannotStoreImageException();
