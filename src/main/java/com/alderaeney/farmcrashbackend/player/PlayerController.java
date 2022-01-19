@@ -228,18 +228,21 @@ public class PlayerController {
         Optional<Player> player = playerService.findPlayerByName(username);
         if (player.isPresent()) {
             Player play = player.get();
+            for (Crop crop : play.getCrops()) {
+                System.out.println("Crop " + crop.getId() + " " + crop.getName() + " Status: " + crop.getStage());
+            }
             try {
                 Crop crop = play.getCrops().get(index);
+                System.out.println("Crop on index " + index + " " + crop);
                 if (crop.getStage() == CropStage.READYTOFARM) {
-                    int aux = checkIfCropExistsAndIsReadyToSell(play.getCrops(), crop.getName());
+                    int aux = checkIfCropExistsAndIsReadyToSell(play.getCrops(), crop.getName(), index);
                     if (aux > -1) {
-                        Crop cropToAdd = play.getCrops().get(aux);
-                        cropToAdd.setAmount(cropToAdd.getAmount() + crop.getAmount());
+                        System.out.println(aux + " " + index);
+                        play.getCrops().get(aux).setAmount(play.getCrops().get(aux).getAmount() + crop.getAmount());
                         play.getCrops().remove(crop);
-                        play.getCrops().set(aux, cropToAdd);
+                        cropService.removeCrop(crop.getId());
                     } else {
-                        crop.setStage(CropStage.SELL);
-                        play.getCrops().set(index, crop);
+                        play.getCrops().get(index).setStage(CropStage.SELL);
                     }
                     return play;
                 } else
@@ -463,10 +466,10 @@ public class PlayerController {
         return false;
     }
 
-    private int checkIfCropExistsAndIsReadyToSell(List<Crop> crops, String cropName) {
+    private int checkIfCropExistsAndIsReadyToSell(List<Crop> crops, String cropName, Integer index) {
         for (int i = 0; i < crops.size(); i++) {
             Crop crop = crops.get(i);
-            if (crop.getName().equals(cropName) && crop.getStage() == CropStage.SELL) {
+            if (crop.getName().equals(cropName) && crop.getStage() == CropStage.SELL && i != index) {
                 return i;
             }
         }

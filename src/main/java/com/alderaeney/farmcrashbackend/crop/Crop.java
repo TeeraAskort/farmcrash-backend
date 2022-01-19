@@ -18,8 +18,9 @@ import lombok.Setter;
 @Setter
 public class Crop {
     @Id
-    @SequenceGenerator(name = "crop_sequence", sequenceName = "crop_sequence", allocationSize = 1)
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "crop_sequence")
+    // @SequenceGenerator(name = "crop_sequence", sequenceName = "crop_sequence",
+    // allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     @NonNull
     private CropStage stage;

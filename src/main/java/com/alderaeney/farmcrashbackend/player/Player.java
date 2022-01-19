@@ -41,8 +41,9 @@ import org.springframework.security.core.userdetails.UserDetails;
 @Setter
 public class Player implements UserDetails {
     @Id
-    @SequenceGenerator(name = "player_sequence", sequenceName = "player_sequence", allocationSize = 1)
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "player_sequence")
+    // @SequenceGenerator(name = "player_sequence", sequenceName =
+    // "player_sequence", allocationSize = 1)
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     @NonNull
     private String name;
