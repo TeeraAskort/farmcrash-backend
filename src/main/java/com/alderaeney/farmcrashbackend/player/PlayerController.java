@@ -31,6 +31,7 @@ import com.alderaeney.farmcrashbackend.player.exceptions.IndexOutOfBoundsExcepti
 import com.alderaeney.farmcrashbackend.player.exceptions.NotEnoughMoneyException;
 import com.alderaeney.farmcrashbackend.player.exceptions.NotEnoughMoneyToHireException;
 import com.alderaeney.farmcrashbackend.player.exceptions.NotEnoughMoneyToPerformTaskException;
+import com.alderaeney.farmcrashbackend.player.exceptions.OldPasswordDoesNotMatchException;
 import com.alderaeney.farmcrashbackend.player.exceptions.PasswordsDoNotMatchException;
 import com.alderaeney.farmcrashbackend.player.exceptions.PlayerByUSernameNotFoundException;
 import com.alderaeney.farmcrashbackend.player.exceptions.UsernameTakenException;
@@ -373,6 +374,30 @@ public class PlayerController {
         Optional<Player> player = playerService.findPlayerByName(username);
         if (player.isPresent()) {
             return player.get().getStats();
+        } else {
+            throw new PlayerByUSernameNotFoundException(username);
+        }
+    }
+
+    @PostMapping(path = "changePassword")
+    @Transactional
+    public Player changePassword(@RequestBody PlayerChangePassword passwords) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+        Optional<Player> player = playerService.findPlayerByName(username);
+
+        if (player.isPresent()) {
+            Player play = player.get();
+            if (passwordEncoder.matches(passwords.getOldPass(), play.getPassword())) {
+                if (passwords.getNewPass().equals(passwords.getNewPassRepeat())) {
+                    play.setPassword(passwordEncoder.encode(passwords.getNewPass()));
+                    return play;
+                } else {
+                    throw new PasswordsDoNotMatchException();
+                }
+            } else {
+                throw new OldPasswordDoesNotMatchException();
+            }
         } else {
             throw new PlayerByUSernameNotFoundException(username);
         }

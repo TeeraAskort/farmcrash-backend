@@ -82,4 +82,9 @@ public class PlayerExceptionController {
     public ResponseEntity<Object> imageTypeNotSupportedException(ImageTypeNotSupported exception) {
         return new ResponseEntity<>(exception.msg, HttpStatus.NOT_ACCEPTABLE);
     }
+
+    @ExceptionHandler(value = OldPasswordDoesNotMatchException.class)
+    public ResponseEntity<Object> oldPasswordDoesNotMatchException(OldPasswordDoesNotMatchException exception) {
+        return new ResponseEntity<>(exception.msg, HttpStatus.NOT_ACCEPTABLE);
+    }
 }
