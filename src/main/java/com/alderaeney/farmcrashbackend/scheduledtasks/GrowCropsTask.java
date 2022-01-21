@@ -1,7 +1,5 @@
 package com.alderaeney.farmcrashbackend.scheduledtasks;
 
-import java.util.List;
-
 import com.alderaeney.farmcrashbackend.crop.Crop;
 import com.alderaeney.farmcrashbackend.crop.CropStage;
 import com.alderaeney.farmcrashbackend.player.Player;
@@ -24,7 +22,7 @@ public class GrowCropsTask {
     @Scheduled(fixedRate = 10000)
     @Transactional
     public void growCrops() {
-        List<Player> players = playerService.getAllPlayers();
+        Iterable<Player> players = playerService.getAllPlayers();
         for (Player player : players) {
             for (Crop crop : player.getCrops()) {
                 if (crop.getStage() == CropStage.DAY0) {

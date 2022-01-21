@@ -10,7 +10,6 @@ import java.nio.file.StandardCopyOption;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -21,6 +20,8 @@ import com.alderaeney.farmcrashbackend.crop.CropService;
 import com.alderaeney.farmcrashbackend.crop.CropStage;
 import com.alderaeney.farmcrashbackend.crop.exceptions.CropNotFarmeableException;
 import com.alderaeney.farmcrashbackend.crop.exceptions.CropNotFoundException;
+import com.alderaeney.farmcrashbackend.friendrequests.FriendRequest;
+import com.alderaeney.farmcrashbackend.friendrequests.FriendRequestService;
 import com.alderaeney.farmcrashbackend.item.Item;
 import com.alderaeney.farmcrashbackend.item.ItemService;
 import com.alderaeney.farmcrashbackend.player.exceptions.CannotStoreImageException;
@@ -63,7 +64,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import lombok.extern.slf4j.Slf4j;
 
@@ -77,6 +77,7 @@ public class PlayerController {
     private final WorkerService workerService;
     private final ItemService itemService;
     private final StatsService statsService;
+    private final FriendRequestService friendRequestService;
     private final PasswordEncoder passwordEncoder;
 
     private final String IMAGESPATH = "userImages/";
@@ -89,7 +90,7 @@ public class PlayerController {
     @Autowired
     public PlayerController(PlayerService playerService, TaskService taskService, CropService cropService,
             WorkerService workerService, ItemService itemService, StatsService statsService,
-            PasswordEncoder passwordEncoder) {
+            PasswordEncoder passwordEncoder, FriendRequestService friendRequestService) {
         this.playerService = playerService;
         this.taskService = taskService;
         this.cropService = cropService;
@@ -97,6 +98,7 @@ public class PlayerController {
         this.itemService = itemService;
         this.statsService = statsService;
         this.passwordEncoder = passwordEncoder;
+        this.friendRequestService = friendRequestService;
     }
 
     @GetMapping(path = "login")
@@ -112,8 +114,16 @@ public class PlayerController {
     }
 
     @GetMapping(path = "leaderboard")
-    public List<Player> getLeaderBoard() {
-        return playerService.getLeaderBoard();
+    public List<PlayerListEntry> getLeaderBoard() {
+        List<Player> players = playerService.getLeaderBoard();
+
+        List<PlayerListEntry> list = new ArrayList<>();
+
+        for (Player player : players) {
+            list.add(new PlayerListEntry(player.getId(), player.getName(), player.getMoney(), player.getImage()));
+        }
+
+        return list;
     }
 
     @PostMapping(path = "create")
@@ -228,16 +238,11 @@ public class PlayerController {
         Optional<Player> player = playerService.findPlayerByName(username);
         if (player.isPresent()) {
             Player play = player.get();
-            for (Crop crop : play.getCrops()) {
-                System.out.println("Crop " + crop.getId() + " " + crop.getName() + " Status: " + crop.getStage());
-            }
             try {
                 Crop crop = play.getCrops().get(index);
-                System.out.println("Crop on index " + index + " " + crop);
                 if (crop.getStage() == CropStage.READYTOFARM) {
                     int aux = checkIfCropExistsAndIsReadyToSell(play.getCrops(), crop.getName(), index);
                     if (aux > -1) {
-                        System.out.println(aux + " " + index);
                         play.getCrops().get(aux).setAmount(play.getCrops().get(aux).getAmount() + crop.getAmount());
                         play.getCrops().remove(crop);
                         cropService.removeCrop(crop.getId());
@@ -452,6 +457,41 @@ public class PlayerController {
         } else {
             throw new PlayerByUSernameNotFoundException(username);
         }
+    }
+
+    @GetMapping(path = "send-friend-request/{name}")
+    @Transactional
+    public List<FriendRequest> sendFriendRequest(@PathVariable("name") String playerName) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+        Optional<Player> player = playerService.findPlayerByName(username);
+        if (player.isPresent()) {
+            Player play = player.get();
+            Optional<Player> playerToRequest = playerService.findPlayerByName(playerName);
+            if (playerToRequest.isPresent()) {
+                Player playToRequest = playerToRequest.get();
+                FriendRequest request = new FriendRequest();
+                request.setPlayerSendingRequest(play);
+                request.setPlayerGettingTheRequest(playToRequest);
+                friendRequestService.saveRequest(request);
+                return friendRequestService.getAllRequestsFromPlayer(play);
+            } else {
+                throw new PlayerByUSernameNotFoundException(playerName);
+            }
+        } else {
+            throw new PlayerByUSernameNotFoundException(username);
+        }
+    }
+
+    @GetMapping(path = "searchUsers/{name}/{page}")
+    public PlayerList searchUsers(@PathVariable String name, @PathVariable Integer page) {
+        Iterable<Player> players = playerService.searchUsersByName(name, page);
+        PlayerList list = new PlayerList(page, new ArrayList<>());
+        for (Player player : players) {
+            list.getPlayers()
+                    .add(new PlayerListEntry(player.getId(), player.getName(), player.getMoney(), player.getImage()));
+        }
+        return list;
     }
 
     private boolean checkIfWorkerIsAlreadyHired(List<Worker> workers, Worker newWorker) {

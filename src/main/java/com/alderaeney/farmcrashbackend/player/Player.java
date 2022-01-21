@@ -12,8 +12,10 @@ import javax.persistence.FetchType;
 import javax.persistence.GeneratedValue;
 import javax.persistence.GenerationType;
 import javax.persistence.Id;
+import javax.persistence.JoinColumn;
+import javax.persistence.JoinTable;
+import javax.persistence.ManyToMany;
 import javax.persistence.OneToOne;
-import javax.persistence.SequenceGenerator;
 import javax.persistence.Table;
 
 import lombok.AllArgsConstructor;
@@ -72,6 +74,16 @@ public class Player implements UserDetails {
     @NonNull
     @OneToOne(fetch = FetchType.LAZY, cascade = CascadeType.ALL, mappedBy = "player")
     private Stats stats;
+
+    @JsonIgnore
+    @ManyToMany
+    @JoinTable(name = "friends", joinColumns = @JoinColumn(name = "friender", referencedColumnName = "id"), inverseJoinColumns = @JoinColumn(name = "friendOf", referencedColumnName = "id"))
+    private List<Player> friends;
+
+    @JsonIgnore
+    @ManyToMany
+    @JoinTable(name = "friends", joinColumns = @JoinColumn(name = "friendOf", referencedColumnName = "id"), inverseJoinColumns = @JoinColumn(name = "friender", referencedColumnName = "id"))
+    private List<Player> friendOf;
 
     @Override
     public String getUsername() {

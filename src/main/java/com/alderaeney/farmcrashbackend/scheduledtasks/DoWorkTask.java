@@ -10,8 +10,6 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.util.List;
-
 import com.alderaeney.farmcrashbackend.item.Item;
 import com.alderaeney.farmcrashbackend.item.ItemService;
 import com.alderaeney.farmcrashbackend.item.ItemType;
@@ -36,7 +34,7 @@ public class DoWorkTask {
     @Scheduled(fixedRate = 10000)
     @Transactional
     public void performTasks() {
-        List<Player> players = playerService.getAllPlayers();
+        Iterable<Player> players = playerService.getAllPlayers();
 
         for (Player player : players) {
             Hibernate.initialize(player.getWorkers());

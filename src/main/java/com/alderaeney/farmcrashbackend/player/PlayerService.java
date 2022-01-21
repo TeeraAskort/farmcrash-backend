@@ -4,6 +4,8 @@ import java.util.List;
 import java.util.Optional;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
@@ -27,7 +29,7 @@ public class PlayerService implements UserDetailsService {
         repository.deleteById(id);
     }
 
-    public List<Player> getAllPlayers() {
+    public Iterable<Player> getAllPlayers() {
         return repository.findAll();
     }
 
@@ -36,11 +38,16 @@ public class PlayerService implements UserDetailsService {
     }
 
     public Player addPlayer(Player player) {
-        return repository.saveAndFlush(player);
+        return repository.save(player);
     }
 
     public Optional<Player> findPlayerByName(String name) {
         return repository.findByName(name);
+    }
+
+    public List<Player> searchUsersByName(String name, Integer page) {
+        Pageable pageable = PageRequest.of(page, 10);
+        return repository.findByNameIgnoreCaseContaining(name, pageable);
     }
 
     @Override
