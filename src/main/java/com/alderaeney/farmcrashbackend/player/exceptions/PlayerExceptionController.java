@@ -87,4 +87,10 @@ public class PlayerExceptionController {
     public ResponseEntity<Object> oldPasswordDoesNotMatchException(OldPasswordDoesNotMatchException exception) {
         return new ResponseEntity<>(exception.msg, HttpStatus.NOT_ACCEPTABLE);
     }
+
+    @ExceptionHandler(value = NoFriendRequestFound.class)
+    public ResponseEntity<Object> noFriendRequestFound(NoFriendRequestFound exception) {
+        return new ResponseEntity<>("No request found between " + exception.senderName + " and " + exception.getterName,
+                HttpStatus.NOT_ACCEPTABLE);
+    }
 }

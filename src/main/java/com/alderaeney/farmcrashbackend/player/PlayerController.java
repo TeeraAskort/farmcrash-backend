@@ -29,6 +29,7 @@ import com.alderaeney.farmcrashbackend.player.exceptions.CropNotFoundInPlayerExc
 import com.alderaeney.farmcrashbackend.player.exceptions.ImageTooBigException;
 import com.alderaeney.farmcrashbackend.player.exceptions.ImageTypeNotSupported;
 import com.alderaeney.farmcrashbackend.player.exceptions.IndexOutOfBoundsException;
+import com.alderaeney.farmcrashbackend.player.exceptions.NoFriendRequestFound;
 import com.alderaeney.farmcrashbackend.player.exceptions.NotEnoughMoneyException;
 import com.alderaeney.farmcrashbackend.player.exceptions.NotEnoughMoneyToHireException;
 import com.alderaeney.farmcrashbackend.player.exceptions.NotEnoughMoneyToPerformTaskException;
@@ -51,6 +52,7 @@ import com.alderaeney.farmcrashbackend.worker.exceptions.WorkerNotFoundException
 
 import org.apache.commons.io.FilenameUtils;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Page;
 import org.springframework.http.MediaType;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
@@ -484,14 +486,53 @@ public class PlayerController {
     }
 
     @GetMapping(path = "searchUsers/{name}/{page}")
-    public PlayerList searchUsers(@PathVariable String name, @PathVariable Integer page) {
-        Iterable<Player> players = playerService.searchUsersByName(name, page);
-        PlayerList list = new PlayerList(page, new ArrayList<>());
-        for (Player player : players) {
-            list.getPlayers()
-                    .add(new PlayerListEntry(player.getId(), player.getName(), player.getMoney(), player.getImage()));
+    public Page<Player> searchUsers(@PathVariable String name, @PathVariable Integer page) {
+        return playerService.searchUsersByName(name, page);
+    }
+
+    @GetMapping(path = "getFriendRequests")
+    public List<FriendRequest> getFriendRequests() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String username = auth.getName();
+        Optional<Player> player = playerService.findPlayerByName(username);
+
+        if (player.isPresent()) {
+            Player play = player.get();
+            return friendRequestService.getAllRequestsToPlayer(play);
+        } else {
+            throw new PlayerByUSernameNotFoundException(username);
         }
-        return list;
+    }
+
+    @GetMapping(path = "acceptRequest/{username}")
+    @Transactional
+    public List<PlayerListEntry> acceptRequest(@PathVariable String username) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String name = auth.getName();
+        Optional<Player> player = playerService.findPlayerByName(name);
+
+        if (player.isPresent()) {
+            Player play = player.get();
+            Optional<Player> playerRequesting = playerService.findPlayerByName(username);
+            if (playerRequesting.isPresent()) {
+                Player sender = playerRequesting.get();
+                Optional<FriendRequest> request = friendRequestService
+                        .getFriendRequestByPlayerSendingAndPlayerGettingTheRequest(sender, play);
+                if (request.isPresent()) {
+                    FriendRequest req = request.get();
+                    play.getFriendOf().add(sender);
+                    sender.getFriends().add(play);
+                    friendRequestService.removeRequest(req);
+                    return new ArrayList<>();
+                } else {
+                    throw new NoFriendRequestFound(username, name);
+                }
+            } else {
+                throw new PlayerByUSernameNotFoundException(username);
+            }
+        } else {
+            throw new PlayerByUSernameNotFoundException(name);
+        }
     }
 
     private boolean checkIfWorkerIsAlreadyHired(List<Worker> workers, Worker newWorker) {

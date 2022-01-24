@@ -1,6 +1,7 @@
 package com.alderaeney.farmcrashbackend.friendrequests;
 
 import java.util.List;
+import java.util.Optional;
 
 import com.alderaeney.farmcrashbackend.player.Player;
 
@@ -13,5 +14,8 @@ public interface FriendRequestRepository extends JpaRepository<FriendRequest, Lo
     List<FriendRequest> findAllFriendRequestsByPlayerSendingRequest(Player playerSendingRequest);
 
     List<FriendRequest> findAllFriendRequestsByPlayerGettingTheRequest(Player playerGettingTheRequest);
+
+    Optional<FriendRequest> findByPlayerGettingTheRequestAndPlayerSendingRequest(
+            Player playerGettingTheRequest, Player playerSendingRequest);
 
 }

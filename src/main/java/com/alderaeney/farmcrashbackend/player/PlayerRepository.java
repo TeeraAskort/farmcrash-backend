@@ -3,6 +3,7 @@ package com.alderaeney.farmcrashbackend.player;
 import java.util.List;
 import java.util.Optional;
 
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.repository.PagingAndSortingRepository;
 import org.springframework.stereotype.Repository;
@@ -16,5 +17,5 @@ public interface PlayerRepository extends PagingAndSortingRepository<Player, Lon
 
     Optional<Player> findByName(String name);
 
-    List<Player> findByNameIgnoreCaseContaining(String name, Pageable pageable);
+    Page<Player> findByNameIgnoreCaseContaining(String name, Pageable pageable);
 }

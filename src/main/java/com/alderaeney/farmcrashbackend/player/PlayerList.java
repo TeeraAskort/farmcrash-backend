@@ -11,5 +11,6 @@ import lombok.NoArgsConstructor;
 @AllArgsConstructor
 public class PlayerList {
     private Integer page;
+    private Integer pages;
     private List<PlayerListEntry> players;
 }

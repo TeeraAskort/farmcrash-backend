@@ -1,6 +1,7 @@
 package com.alderaeney.farmcrashbackend.friendrequests;
 
 import java.util.List;
+import java.util.Optional;
 
 import com.alderaeney.farmcrashbackend.player.Player;
 
@@ -31,5 +32,10 @@ public class FriendRequestService {
 
     public void removeRequest(FriendRequest request) {
         repository.delete(request);
+    }
+
+    public Optional<FriendRequest> getFriendRequestByPlayerSendingAndPlayerGettingTheRequest(Player sender,
+            Player getter) {
+        return repository.findByPlayerGettingTheRequestAndPlayerSendingRequest(getter, sender);
     }
 }
