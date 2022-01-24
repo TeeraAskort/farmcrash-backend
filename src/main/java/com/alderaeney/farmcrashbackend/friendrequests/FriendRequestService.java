@@ -36,6 +36,6 @@ public class FriendRequestService {
 
     public Optional<FriendRequest> getFriendRequestByPlayerSendingAndPlayerGettingTheRequest(Player sender,
             Player getter) {
-        return repository.findByPlayerGettingTheRequestAndPlayerSendingRequest(getter, sender);
+        return repository.findByPlayerGettingTheRequestAndzPlayerSendingRequest(getter, sender);
     }
 }
