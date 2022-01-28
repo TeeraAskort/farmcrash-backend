@@ -85,6 +85,16 @@ public class Player implements UserDetails {
     @JoinTable(name = "friends", joinColumns = @JoinColumn(name = "friendOf", referencedColumnName = "id"), inverseJoinColumns = @JoinColumn(name = "friender", referencedColumnName = "id"))
     private List<Player> friendOf;
 
+    @JsonIgnore
+    @ManyToMany
+    @JoinTable(name = "blockedPlayers", joinColumns = @JoinColumn(name = "blockedBy", referencedColumnName = "id"), inverseJoinColumns = @JoinColumn(name = "blocked", referencedColumnName = "id"))
+    private List<Player> blockedBy;
+
+    @JsonIgnore
+    @ManyToMany
+    @JoinTable(name = "blockedPlayers", joinColumns = @JoinColumn(name = "blocked", referencedColumnName = "id"), inverseJoinColumns = @JoinColumn(name = "blocked", referencedColumnName = "id"))
+    private List<Player> blockedPlayers;
+
     @Override
     public String getUsername() {
         return this.name;

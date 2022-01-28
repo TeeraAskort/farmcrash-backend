@@ -93,4 +93,27 @@ public class PlayerExceptionController {
         return new ResponseEntity<>("No request found between " + exception.senderName + " and " + exception.getterName,
                 HttpStatus.NOT_ACCEPTABLE);
     }
+
+    @ExceptionHandler(value = FriendRequestToSamePlayerException.class)
+    public ResponseEntity<Object> friendRequestToSamePlayerException(FriendRequestToSamePlayerException exception) {
+        return new ResponseEntity<>("Friend request sent to the same player " + exception.username,
+                HttpStatus.NOT_ACCEPTABLE);
+    }
+
+    @ExceptionHandler(value = PlayerNotBlockedException.class)
+    public ResponseEntity<Object> playerNotBlockedException(PlayerNotBlockedException exception) {
+        return new ResponseEntity<>("Player with username " + exception.username + " not blocked.",
+                HttpStatus.NOT_FOUND);
+    }
+
+    @ExceptionHandler(value = PlayerAlreadyBlockedException.class)
+    public ResponseEntity<Object> playerAlreadyBlockedException(PlayerAlreadyBlockedException exception) {
+        return new ResponseEntity<>("Player with username " + exception.username + " already blocked.",
+                HttpStatus.NOT_ACCEPTABLE);
+    }
+
+    @ExceptionHandler(value = PlayerBlockingItselfException.class)
+    public ResponseEntity<Object> playerBlockingItselfException(PlayerBlockingItselfException exception) {
+        return new ResponseEntity<>(exception.msg, HttpStatus.NOT_ACCEPTABLE);
+    }
 }

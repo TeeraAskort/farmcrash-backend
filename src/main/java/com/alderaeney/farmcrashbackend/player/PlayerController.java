@@ -26,6 +26,7 @@ import com.alderaeney.farmcrashbackend.item.Item;
 import com.alderaeney.farmcrashbackend.item.ItemService;
 import com.alderaeney.farmcrashbackend.player.exceptions.CannotStoreImageException;
 import com.alderaeney.farmcrashbackend.player.exceptions.CropNotFoundInPlayerException;
+import com.alderaeney.farmcrashbackend.player.exceptions.FriendRequestToSamePlayerException;
 import com.alderaeney.farmcrashbackend.player.exceptions.ImageTooBigException;
 import com.alderaeney.farmcrashbackend.player.exceptions.ImageTypeNotSupported;
 import com.alderaeney.farmcrashbackend.player.exceptions.IndexOutOfBoundsException;
@@ -35,6 +36,8 @@ import com.alderaeney.farmcrashbackend.player.exceptions.NotEnoughMoneyToHireExc
 import com.alderaeney.farmcrashbackend.player.exceptions.NotEnoughMoneyToPerformTaskException;
 import com.alderaeney.farmcrashbackend.player.exceptions.OldPasswordDoesNotMatchException;
 import com.alderaeney.farmcrashbackend.player.exceptions.PasswordsDoNotMatchException;
+import com.alderaeney.farmcrashbackend.player.exceptions.PlayerAlreadyBlockedException;
+import com.alderaeney.farmcrashbackend.player.exceptions.PlayerBlockingItselfException;
 import com.alderaeney.farmcrashbackend.player.exceptions.PlayerByUSernameNotFoundException;
 import com.alderaeney.farmcrashbackend.player.exceptions.UsernameTakenException;
 import com.alderaeney.farmcrashbackend.player.exceptions.WorkerAlreadyHiredException;
@@ -461,11 +464,14 @@ public class PlayerController {
         }
     }
 
-    @GetMapping(path = "send-friend-request/{name}")
+    @GetMapping(path = "sendFriendRequest/{name}")
     @Transactional
     public List<FriendRequest> sendFriendRequest(@PathVariable("name") String playerName) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
+        if (username.equals(playerName)) {
+            throw new FriendRequestToSamePlayerException(username);
+        }
         Optional<Player> player = playerService.findPlayerByName(username);
         if (player.isPresent()) {
             Player play = player.get();
@@ -506,7 +512,7 @@ public class PlayerController {
 
     @GetMapping(path = "acceptRequest/{username}")
     @Transactional
-    public List<PlayerListEntry> acceptRequest(@PathVariable String username) {
+    public List<FriendRequest> acceptRequest(@PathVariable String username) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String name = auth.getName();
         Optional<Player> player = playerService.findPlayerByName(name);
@@ -523,12 +529,154 @@ public class PlayerController {
                     play.getFriendOf().add(sender);
                     sender.getFriends().add(play);
                     friendRequestService.removeRequest(req);
-                    return new ArrayList<>();
+                    return friendRequestService.getAllRequestsToPlayer(play);
                 } else {
                     throw new NoFriendRequestFound(username, name);
                 }
             } else {
                 throw new PlayerByUSernameNotFoundException(username);
+            }
+        } else {
+            throw new PlayerByUSernameNotFoundException(name);
+        }
+    }
+
+    @GetMapping(path = "getFriends")
+    public List<Player> getFriends() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String name = auth.getName();
+        Optional<Player> player = playerService.findPlayerByName(name);
+
+        if (player.isPresent()) {
+            Player play = player.get();
+            List<Player> friends = new ArrayList<>();
+            friends.addAll(play.getFriends());
+            friends.addAll(play.getFriendOf());
+            return friends;
+        } else {
+            throw new PlayerByUSernameNotFoundException(name);
+        }
+    }
+
+    @GetMapping(path = "unfriend/{playerName}")
+    @Transactional
+    public List<Player> unfriend(@PathVariable String playerName) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String name = auth.getName();
+        Optional<Player> player = playerService.findPlayerByName(name);
+
+        if (player.isPresent()) {
+            Player play = player.get();
+            boolean found = false;
+            for (Player friend : play.getFriends()) {
+                if (friend.getName().equals(playerName)) {
+                    play.getFriends().remove(friend);
+                    found = true;
+                    break;
+                }
+            }
+            if (!found) {
+                for (Player friend : play.getFriendOf()) {
+                    if (friend.getName().equals(playerName)) {
+                        play.getFriendOf().remove(friend);
+                        found = true;
+                        break;
+                    }
+                }
+            }
+            if (found) {
+                List<Player> friends = new ArrayList<>();
+                friends.addAll(play.getFriends());
+                friends.addAll(play.getFriendOf());
+                return friends;
+            } else {
+                throw new PlayerByUSernameNotFoundException(playerName);
+            }
+        } else {
+            throw new PlayerByUSernameNotFoundException(name);
+        }
+    }
+
+    @GetMapping(path = "block/{username}")
+    @Transactional
+    public List<Player> block(@PathVariable String username) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String name = auth.getName();
+
+        if (name.equals(username)) {
+            throw new PlayerBlockingItselfException();
+        }
+
+        Optional<Player> player = playerService.findPlayerByName(name);
+
+        if (player.isPresent()) {
+            Player play = player.get();
+            Optional<Player> playerToBlock = playerService.findPlayerByName(username);
+            if (playerToBlock.isPresent()) {
+                Player blocked = player.get();
+
+                int index = play.getBlockedPlayers().indexOf(blocked);
+                if (index >= 0) {
+                    throw new PlayerAlreadyBlockedException(username);
+                }
+
+                index = play.getFriends().indexOf(blocked);
+                if (index >= 0) {
+                    play.getFriends().remove(blocked);
+                    blocked.getFriendOf().remove(play);
+                }
+
+                index = play.getFriendOf().indexOf(blocked);
+                if (index >= 0) {
+                    play.getFriendOf().remove(blocked);
+                    blocked.getFriends().remove(play);
+                }
+
+                play.getBlockedPlayers().add(blocked);
+                blocked.getBlockedBy().add(play);
+                return play.getBlockedPlayers();
+            } else {
+                throw new PlayerByUSernameNotFoundException(username);
+            }
+        } else {
+            throw new PlayerByUSernameNotFoundException(name);
+        }
+    }
+
+    @GetMapping(path = "getBlockedPlayers")
+    public List<Player> getBlockedPlayers() {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String name = auth.getName();
+        Optional<Player> player = playerService.findPlayerByName(name);
+
+        if (player.isPresent()) {
+            return player.get().getBlockedPlayers();
+        } else {
+            throw new PlayerByUSernameNotFoundException(name);
+        }
+    }
+
+    @GetMapping(path = "unblock/{username}")
+    @Transactional
+    public List<Player> unblockPlayer(@PathVariable String username) {
+        Authentication auth = SecurityContextHolder.getContext().getAuthentication();
+        String name = auth.getName();
+        Optional<Player> player = playerService.findPlayerByName(name);
+
+        if (player.isPresent()) {
+            Player play = player.get();
+            Optional<Player> blockedPlayer = playerService.findPlayerByName(username);
+            if (blockedPlayer.isPresent()) {
+                Player blocked = blockedPlayer.get();
+                int index = play.getBlockedPlayers().indexOf(blocked);
+                if (index >= 0) {
+                    play.getBlockedPlayers().remove(blocked);
+                    blocked.getBlockedBy().remove(play);
+
+                    return play.getBlockedPlayers();
+                } else {
+                    throw new PlayerNotBlockedException(username);
+                }
             }
         } else {
             throw new PlayerByUSernameNotFoundException(name);
