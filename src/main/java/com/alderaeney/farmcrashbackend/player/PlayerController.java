@@ -39,6 +39,7 @@ import com.alderaeney.farmcrashbackend.player.exceptions.PasswordsDoNotMatchExce
 import com.alderaeney.farmcrashbackend.player.exceptions.PlayerAlreadyBlockedException;
 import com.alderaeney.farmcrashbackend.player.exceptions.PlayerBlockingItselfException;
 import com.alderaeney.farmcrashbackend.player.exceptions.PlayerByUSernameNotFoundException;
+import com.alderaeney.farmcrashbackend.player.exceptions.PlayerNotBlockedException;
 import com.alderaeney.farmcrashbackend.player.exceptions.UsernameTakenException;
 import com.alderaeney.farmcrashbackend.player.exceptions.WorkerAlreadyHiredException;
 import com.alderaeney.farmcrashbackend.player.exceptions.WorkerNotFoundInPlayerException;
@@ -677,6 +678,8 @@ public class PlayerController {
                 } else {
                     throw new PlayerNotBlockedException(username);
                 }
+            } else {
+                throw new PlayerByUSernameNotFoundException(username);
             }
         } else {
             throw new PlayerByUSernameNotFoundException(name);

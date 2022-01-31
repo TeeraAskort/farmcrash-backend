@@ -92,7 +92,7 @@ public class Player implements UserDetails {
 
     @JsonIgnore
     @ManyToMany
-    @JoinTable(name = "blockedPlayers", joinColumns = @JoinColumn(name = "blocked", referencedColumnName = "id"), inverseJoinColumns = @JoinColumn(name = "blocked", referencedColumnName = "id"))
+    @JoinTable(name = "blockedPlayers", joinColumns = @JoinColumn(name = "blocked", referencedColumnName = "id"), inverseJoinColumns = @JoinColumn(name = "blockedBy", referencedColumnName = "id"))
     private List<Player> blockedPlayers;
 
     @Override
