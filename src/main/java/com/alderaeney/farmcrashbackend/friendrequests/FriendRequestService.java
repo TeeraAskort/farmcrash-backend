@@ -19,11 +19,11 @@ public class FriendRequestService {
     }
 
     public List<FriendRequest> getAllRequestsFromPlayer(Player player) {
-        return repository.findAllFriendRequestsByPlayerSendingRequest(player);
+        return repository.findAllFriendRequestsByPlayerSendingRequestAndAccepted(player, false);
     }
 
     public List<FriendRequest> getAllRequestsToPlayer(Player player) {
-        return repository.findAllFriendRequestsByPlayerGettingTheRequest(player);
+        return repository.findAllFriendRequestsByPlayerGettingTheRequestAndAccepted(player, false);
     }
 
     public void saveRequest(FriendRequest request) {

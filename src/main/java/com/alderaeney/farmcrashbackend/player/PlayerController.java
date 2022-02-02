@@ -12,6 +12,7 @@ import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 import javax.transaction.Transactional;
 
@@ -37,6 +38,7 @@ import com.alderaeney.farmcrashbackend.player.exceptions.NotEnoughMoneyToPerform
 import com.alderaeney.farmcrashbackend.player.exceptions.OldPasswordDoesNotMatchException;
 import com.alderaeney.farmcrashbackend.player.exceptions.PasswordsDoNotMatchException;
 import com.alderaeney.farmcrashbackend.player.exceptions.PlayerAlreadyBlockedException;
+import com.alderaeney.farmcrashbackend.player.exceptions.PlayerAlreadyFriendedException;
 import com.alderaeney.farmcrashbackend.player.exceptions.PlayerBlockingItselfException;
 import com.alderaeney.farmcrashbackend.player.exceptions.PlayerByUSernameNotFoundException;
 import com.alderaeney.farmcrashbackend.player.exceptions.PlayerNotBlockedException;
@@ -466,8 +468,7 @@ public class PlayerController {
     }
 
     @GetMapping(path = "sendFriendRequest/{name}")
-    @Transactional
-    public List<FriendRequest> sendFriendRequest(@PathVariable("name") String playerName) {
+    public void sendFriendRequest(@PathVariable("name") String playerName) {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
         String username = auth.getName();
         if (username.equals(playerName)) {
@@ -479,11 +480,15 @@ public class PlayerController {
             Optional<Player> playerToRequest = playerService.findPlayerByName(playerName);
             if (playerToRequest.isPresent()) {
                 Player playToRequest = playerToRequest.get();
+                for (Player friend : play.getFriends()) {
+                    if (friend.getName().equals(playToRequest.getName())) {
+                        throw new PlayerAlreadyFriendedException(playToRequest.getName());
+                    }
+                }
                 FriendRequest request = new FriendRequest();
                 request.setPlayerSendingRequest(play);
                 request.setPlayerGettingTheRequest(playToRequest);
                 friendRequestService.saveRequest(request);
-                return friendRequestService.getAllRequestsFromPlayer(play);
             } else {
                 throw new PlayerByUSernameNotFoundException(playerName);
             }
@@ -529,7 +534,7 @@ public class PlayerController {
                     FriendRequest req = request.get();
                     play.getFriendOf().add(sender);
                     sender.getFriends().add(play);
-                    friendRequestService.removeRequest(req);
+                    req.setAccepted(true);
                     return friendRequestService.getAllRequestsToPlayer(play);
                 } else {
                     throw new NoFriendRequestFound(username, name);
@@ -553,7 +558,7 @@ public class PlayerController {
             List<Player> friends = new ArrayList<>();
             friends.addAll(play.getFriends());
             friends.addAll(play.getFriendOf());
-            return friends;
+            return removeDuplicates(friends);
         } else {
             throw new PlayerByUSernameNotFoundException(name);
         }
@@ -572,6 +577,9 @@ public class PlayerController {
             for (Player friend : play.getFriends()) {
                 if (friend.getName().equals(playerName)) {
                     play.getFriends().remove(friend);
+                    play.getFriends().remove(friend);
+                    friend.getFriendOf().remove(play);
+                    friend.getFriendOf().remove(play);
                     found = true;
                     break;
                 }
@@ -580,6 +588,9 @@ public class PlayerController {
                 for (Player friend : play.getFriendOf()) {
                     if (friend.getName().equals(playerName)) {
                         play.getFriendOf().remove(friend);
+                        play.getFriendOf().remove(friend);
+                        friend.getFriends().remove(play);
+                        friend.getFriends().remove(play);
                         found = true;
                         break;
                     }
@@ -614,28 +625,32 @@ public class PlayerController {
             Player play = player.get();
             Optional<Player> playerToBlock = playerService.findPlayerByName(username);
             if (playerToBlock.isPresent()) {
-                Player blocked = player.get();
+                Player blocked = playerToBlock.get();
 
-                int index = play.getBlockedPlayers().indexOf(blocked);
+                int index = new ArrayList<>(play.getBlockedPlayers()).indexOf(blocked);
                 if (index >= 0) {
                     throw new PlayerAlreadyBlockedException(username);
                 }
 
-                index = play.getFriends().indexOf(blocked);
+                index = new ArrayList<>(play.getFriends()).indexOf(blocked);
                 if (index >= 0) {
+                    play.getFriends().remove(blocked);
+                    blocked.getFriendOf().remove(play);
                     play.getFriends().remove(blocked);
                     blocked.getFriendOf().remove(play);
                 }
 
-                index = play.getFriendOf().indexOf(blocked);
+                index = new ArrayList<>(play.getFriendOf()).indexOf(blocked);
                 if (index >= 0) {
+                    play.getFriendOf().remove(blocked);
+                    blocked.getFriends().remove(play);
                     play.getFriendOf().remove(blocked);
                     blocked.getFriends().remove(play);
                 }
 
                 play.getBlockedPlayers().add(blocked);
                 blocked.getBlockedBy().add(play);
-                return play.getBlockedPlayers();
+                return removeDuplicates(play.getBlockedPlayers());
             } else {
                 throw new PlayerByUSernameNotFoundException(username);
             }
@@ -651,7 +666,7 @@ public class PlayerController {
         Optional<Player> player = playerService.findPlayerByName(name);
 
         if (player.isPresent()) {
-            return player.get().getBlockedPlayers();
+            return removeDuplicates(player.get().getBlockedPlayers());
         } else {
             throw new PlayerByUSernameNotFoundException(name);
         }
@@ -669,12 +684,14 @@ public class PlayerController {
             Optional<Player> blockedPlayer = playerService.findPlayerByName(username);
             if (blockedPlayer.isPresent()) {
                 Player blocked = blockedPlayer.get();
-                int index = play.getBlockedPlayers().indexOf(blocked);
+                int index = new ArrayList<>(play.getBlockedPlayers()).indexOf(blocked);
                 if (index >= 0) {
                     play.getBlockedPlayers().remove(blocked);
                     blocked.getBlockedBy().remove(play);
+                    play.getBlockedPlayers().remove(blocked);
+                    blocked.getBlockedBy().remove(play);
 
-                    return play.getBlockedPlayers();
+                    return removeDuplicates(play.getBlockedPlayers());
                 } else {
                     throw new PlayerNotBlockedException(username);
                 }
@@ -724,5 +741,16 @@ public class PlayerController {
         }
 
         return stats;
+    }
+
+    private List<Player> removeDuplicates(List<Player> players) {
+        for (int i = 0; i < players.size(); i++) {
+            for (int j = i + 1; j < players.size(); j++) {
+                if (players.get(i).getName().equals(players.get(j).getName())) {
+                    players.remove(j);
+                }
+            }
+        }
+        return players;
     }
 }

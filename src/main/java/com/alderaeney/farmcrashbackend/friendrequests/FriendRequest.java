@@ -36,4 +36,6 @@ public class FriendRequest implements Serializable {
     @ManyToOne()
     @JoinColumn(name = "player_getting_id", referencedColumnName = "id")
     private Player playerGettingTheRequest;
+
+    private Boolean accepted = false;
 }

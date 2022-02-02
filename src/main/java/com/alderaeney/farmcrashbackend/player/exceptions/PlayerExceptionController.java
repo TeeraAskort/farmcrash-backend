@@ -116,4 +116,10 @@ public class PlayerExceptionController {
     public ResponseEntity<Object> playerBlockingItselfException(PlayerBlockingItselfException exception) {
         return new ResponseEntity<>(exception.msg, HttpStatus.NOT_ACCEPTABLE);
     }
+
+    @ExceptionHandler(value = PlayerAlreadyFriendedException.class)
+    public ResponseEntity<Object> playerAlreadyFriendedException(PlayerAlreadyFriendedException exception) {
+        return new ResponseEntity<>("Player with name " + exception.name + " already befriended",
+                HttpStatus.NOT_ACCEPTABLE);
+    }
 }
