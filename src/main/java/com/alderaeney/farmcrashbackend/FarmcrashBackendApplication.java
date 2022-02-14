@@ -24,7 +24,7 @@ public class FarmcrashBackendApplication {
 		corsConfiguration.setAllowCredentials(true);
 		corsConfiguration.setAllowedOrigins(
 				Arrays.asList("http://127.0.0.1:5500", "http://localhost:8081/", "http://localhost:8080/",
-						"http://localhost:4200/"));
+						"http://localhost:4200/", "http://2daw03.ticsimarro.org"));
 		corsConfiguration.setAllowedHeaders(Arrays.asList("Origin", "Access-Control-Allow-Origin", "Content-Type",
 				"Accept", "Authorization", "Origin, Accept", "X-Requested-With", "Access-Control-Request-Method",
 				"Access-Control-Request-Headers"));
